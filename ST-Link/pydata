@@ -1,0 +1,19 @@
+#!/bin/python3
+
+import array
+
+f = open ( "bogus.bin", "wb" )
+
+count = 512 * 1024 // 4
+
+arr = array.array ( 'I' )
+
+# index runs 0,1,..,n-1
+for i in range(count) :
+    arr.append ( i )
+
+arr.tofile ( f )
+
+f.close ()
+
+# THE END
