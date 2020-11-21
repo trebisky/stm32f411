@@ -36,10 +36,7 @@ locore.o:	locore.s
 blink.o:	blink.c
 	$(CC) -c blink.c
 
-# This is what we expect
-OCDCFG = -f /usr/share/openocd/scripts/interface/stlink-v2.cfg -f /usr/share/openocd/scripts/target/stm32f1x.cfg
-# Some newer chips are shipping with a idcode of 0x2ba01477, this will make them work.
-#OCDCFG = -f /usr/share/openocd/scripts/interface/stlink-v2.cfg -f /usr/share/openocd/scripts/target/cs32f1x.cfg
+OCDCFG = -f /usr/share/openocd/scripts/interface/stlink-v2.cfg -f /usr/share/openocd/scripts/target/stm32f4x.cfg
 
 flash:  blink.elf
 	openocd $(OCDCFG) -c "program blink.elf verify reset exit"

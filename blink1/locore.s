@@ -1,12 +1,12 @@
 /* locore.s
- * Assembler startup file for the STM32F103
+ * Assembler startup file for the STM32F411
  * Tom Trebisky  9-24-2016
  */
 
-# The Cortex M3 is a thumb only processor
+# The Cortex M3 and M4 are thumb only processors
 
 .section .vectors
-.cpu cortex-m3
+.cpu cortex-m4
 .thumb
 
 .word   0x20005000  /* stack top address */
