@@ -1,6 +1,6 @@
 /* locore.s
  * Assembler startup file for the STM32F411
- * Tom Trebisky  9-24-2016
+ * Tom Trebisky  9-24-2016 11-21-2020
  */
 
 # The Cortex M3 and M4 are thumb only processors
@@ -9,7 +9,7 @@
 .cpu cortex-m4
 .thumb
 
-.word   0x20005000  /* stack top address */
+.word   0x20020000  /* stack top address */
 .word   _reset      /* 1 Reset */
 .word   spin        /* 2 NMI */
 .word   spin        /* 3 Hard Fault */

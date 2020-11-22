@@ -22,3 +22,4 @@ Here is sort of an index to what you find here:
 
 * ST-Link - initial experiments with openocd and my ST-Link adapter
 * blink1 - the most basic LED blinking demo I can manage
+* serial1 - basic serial IO (uart) without interrupts

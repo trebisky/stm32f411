@@ -1,9 +1,8 @@
 # Makefile for blink demo
 #
 # This is/was the first code I ever wrote to
-# run on an STM32F103.
+# run on an STM32F411.
 
-#TOOLS = arm-linux-gnu
 TOOLS = arm-none-eabi
 
 # Assembling with gcc makes it want crt0 at link time.
@@ -11,7 +10,10 @@ TOOLS = arm-none-eabi
 AS = $(TOOLS)-as
 # Use the -g flag if you intend to use gdb
 #CC = $(TOOLS)-gcc -mcpu=cortex-m3 -mthumb
-CC = $(TOOLS)-gcc -mcpu=cortex-m3 -mthumb -g
+#CC = $(TOOLS)-gcc -mcpu=cortex-m3 -mthumb -g
+CC = $(TOOLS)-gcc -mcpu=cortex-m3 -mthumb -Os
+
+# Optimizing for size works fine and reduces code size from 360 to 252 bytes.
 
 #LD = $(TOOLS)-gcc
 LD = $(TOOLS)-ld.bfd

@@ -111,17 +111,18 @@ struct gpio {
 #define CONF_GP_UD	0x0	/* Pull up/down */
 #define CONF_GP_OD	0x4	/* Open drain */
 
-/* This gives a blink rate of about 2.7 Hz */
+/* On the STM32F103, this gives a blink rate of about 2.7 Hz */
 /* i.e. the delay time is about 0.2 seconds (200 ms) */
 #define FAST	200
 
 #define FASTER	50
-#define SLOWER	400
+#define SLOWER	800
 
 void
 delay ( void )
 {
-	volatile int count = 1000 * FAST;
+	// volatile int count = 1000 * FAST;
+	volatile unsigned int count = 1000 * SLOWER;
 
 	while ( count-- )
 	    ;
