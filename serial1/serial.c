@@ -75,16 +75,54 @@ struct uart {
 #define	ST_BREAK	0x0100
 #define	ST_CTS		0x0200
 
+/* The baud rate.  This is subdivided from the bus clock.
+ * It is as simple as dividing the bus clock by the baud
+ * rate.  We could worry about it not dividing evenly, but
+ * what can we do if it does not?
+ */
+static void
+uart_init ( struct uart *up, int baud )
+{
+	/* 1 start bit, even parity */
+	up->cr1 = CR1_CONSOLE;
+	// up->cr1 = CR1_GPS;
+
+	up->cr2 = 0;
+	up->cr3 = 0;
+	up->gtp = 0;
+
+	if ( up == UART2_BASE )
+	    up->baud = get_pclk1() / baud;
+	else
+	    up->baud = get_pclk2() / baud;
+}
+
 void
 serial_init ( void )
 {
+	gpio_uart_init ( 1 );
+	uart_init ( UART1_BASE, 115200 );
 }
 
-#ifdef F103
+/* XXX locked onto UART1 */
+void
+console_putc ( int c )
+{
+	struct uart *up = UART1_BASE;
 
-void serial_putc ( int );
+	if ( c == '\n' )
+	    console_putc ( '\r' );
+
+	while ( ! (up->status & ST_TXE) )
+	    ;
+	up->data = c;
+}
 
 /* ------------------------------------------------------- */
+/* ------------------------------------------------------- */
+/* ------------------------------------------------------- */
+
+#ifdef F103
 
 void
 serial1_handler ( void )

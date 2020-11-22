@@ -81,6 +81,45 @@ rcc_init ( void )
 	rp->apb2_e |= UART3_ENABLE;
 }
 
+// On the F103 blue pill, we had an external 8 Mhz crystal
+//  and set the PLL to multiply by 9 to get 72 Mhz.
+// #define PCLK1           36000000 -- F103
+// #define PCLK2           72000000 -- F103
+
+/* On the Black Pill boards that I have, we have an external
+ * 25 Mhz crystal oscillator.  Presumably we will multiply
+ * that by 4 someday to get 100 Mhz, but for now, we go with
+ * the default multiplier of 1.
+ * This 25 Mhz external clock is HSE and probably must be
+ * configured before it will be used.
+ *
+ * Unlike the F103, as near as I can tell APB1 and APB2 run
+ * at the same full clock rate ( 100 Mhz someday ).
+ *
+ * There is also a 16 Mhz RC internal oscillator (HSI)
+ * I am betting that it gets used by default.
+ */
+
+/* These must be maintained by hand */
+#define PCLK1           16000000
+#define PCLK2           16000000
+
+
+/* XXX - someday just get_pclk() since these are always the same.
+ */
+int
+get_pclk1 ( void )
+{
+        return PCLK1;
+}
+
+int
+get_pclk2 ( void )
+{
+        return PCLK2;
+}
+
+
 void
 startup ( void )
 {
@@ -91,8 +130,10 @@ startup ( void )
 
 	for ( ;; ) {
 	    led_on ();
+	    console_putc ( 'X' );
 	    blink_delay ();
 	    led_off ();
+	    console_putc ( '-' );
 	    blink_delay ();
 	}
 }
