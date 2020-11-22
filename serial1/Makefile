@@ -13,7 +13,9 @@ AS = $(TOOLS)-as
 #CC = $(TOOLS)-gcc -mcpu=cortex-m4 -mthumb -g
 #CC = $(TOOLS)-gcc -mcpu=cortex-m4 -mthumb -Os
 
-CC = $(TOOLS)-gcc -mcpu=cortex-m4 -mthumb
+# In truth the implicit fn warnings are good, but for the purpose of
+#  these demos, I can't be busy to set up prototypes as I should.
+CC = $(TOOLS)-gcc -mcpu=cortex-m4 -mthumb -Wno-implicit-function-declaration
 
 #LD = $(TOOLS)-gcc
 LD = $(TOOLS)-ld.bfd
@@ -21,7 +23,7 @@ OBJCOPY = $(TOOLS)-objcopy
 DUMP = $(TOOLS)-objdump -d
 GDB = $(TOOLS)-gdb
 
-OBJS = locore.o serial.o
+OBJS = locore.o main.o led.o serial.o
 
 all: serial.elf serial.dump
 
@@ -34,8 +36,8 @@ serial.elf: 	$(OBJS)
 locore.o:	locore.s
 	$(AS) locore.s -o locore.o
 
-serial.o:	serial.c
-	$(CC) -c serial.c
+.c.o:
+	$(CC) -o $@ -c $<
 
 OCDCFG = -f /usr/share/openocd/scripts/interface/stlink-v2.cfg -f /usr/share/openocd/scripts/target/stm32f4x.cfg
 

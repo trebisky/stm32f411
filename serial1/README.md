@@ -1,10 +1,18 @@
-This is my blink1 demo for the STM32F103 ported to the
-STM32F411.  The idea is to discover what I need to tweak
-to get the code to run on the F411.
+This is my serial demo for the STM32F411
 
-It turns out quite a lot is different.
-The base addresses for the RCC and GPIO are different.
-The RCC register layout is quite different.
-The GPIO registers are entirely different.
+I discovered that the UART register layout and bits
+are essentially the same as the STM32F103, so I just
+copied my driver from my STM32F103 project and fiddled
+with it.  The base addresses for the registers changed.
 
-I don't need to set up bus clocks or any of that.
+There will be other details. The bus clocks are likely
+(surely) different, so the baud rate code will need to
+change accordingly.  Also the gpio pin setup to work
+with the serial mode will have to be done as per
+the F411.
+
+I began splitting things into separate files for each
+bit of hardware, which makes it clearer for me anyway
+to be dealing with just one aspect of things in each
+source file.
+
