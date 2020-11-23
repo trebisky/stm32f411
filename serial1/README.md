@@ -15,9 +15,3 @@ I began splitting things into separate files for each
 bit of hardware, which makes it clearer for me anyway
 to be dealing with just one aspect of things in each
 source file.
-
-Also, I couldn't resist and added the code to rcc.c to
-switch from the 16 Mhz internal RC (HSI) to using the external
-25 Mhz crystal (HSE).  The next step will be to set up
-the PLL and get 100 Mhz.
-

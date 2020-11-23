@@ -1,23 +1,25 @@
-This is my serial demo for the STM32F411
+This is my clocks demo for the STM32F411
 
-I discovered that the UART register layout and bits
-are essentially the same as the STM32F103, so I just
-copied my driver from my STM32F103 project and fiddled
-with it.  The base addresses for the registers changed.
+It is really a copy of my serial1 demo,
+but I add code to rcc.c to get the CPU
+running at 100 Mhz.
 
-There will be other details. The bus clocks are likely
-(surely) different, so the baud rate code will need to
-change accordingly.  Also the gpio pin setup to work
-with the serial mode will have to be done as per
-the F411.
+This chip comes up using the HSI clock which
+runs at 16 Mhz and uses an internal RC circuit.
 
-I began splitting things into separate files for each
-bit of hardware, which makes it clearer for me anyway
-to be dealing with just one aspect of things in each
-source file.
+The first step is to switch to using the HSE
+clock, which uses an external 25 Mhz crystal
+(on my board at least).
 
-Also, I couldn't resist and added the code to rcc.c to
-switch from the 16 Mhz internal RC (HSI) to using the external
-25 Mhz crystal (HSE).  The next step will be to set up
-the PLL and get 100 Mhz.
+Then the game is to use the PLL to kick the
+25 Mhz up to 100 Mhz to run the cpu.
+Actually you must use 96 Mhz if you want a
+proper 48 Mhz clock for USB.
 
+I pulled my hair out for several hours.
+When I switched to the PLL for 96 Mhz, the processor
+would just hang.  Then I took a break and went for
+a bike ride and got the idea.  Maybe 96 Mhz is too
+fast for the flash memory without some configuring.
+So I tried just using the PLL to generate 16 Mhz and
+that worked fine, confirming my idea.

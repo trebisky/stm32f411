@@ -28,16 +28,13 @@ blink_delay ( int rate )
 	    ;
 }
 
-/* The blinking will make you crazy */
 static void
-test1 ( void )
+test_blink ( void )
 {
 	for ( ;; ) {
 	    led_on ();
-	    console_putc ( 'X' );
 	    blink_delay ( EVEN_SLOWER );
 	    led_off ();
-	    console_putc ( '-' );
 	    blink_delay ( EVEN_SLOWER );
 	}
 }
@@ -72,6 +69,14 @@ test4 ( void )
 	}
 }
 
+/* Can be called from within rcc_init */
+void
+blinker ( void )
+{
+	led_init ();
+	test_blink ();
+}
+
 void
 startup ( void )
 {
@@ -81,10 +86,23 @@ startup ( void )
 	led_init ();
 	led_off ();
 
-	// test1 ();
+	// test_blink ();
 	// test2 ();
 	// test3 ();
-	test4 ();
+	// test4 ();
+
+	console_puts ( "\n" );
+	console_puts ( "Up and running with default clock\n" );
+
+	rcc_debug ();
+
+	console_puts ( "Up and running with clock reconfigured\n" );
+	console_puts ( "Hello World\n" );
+
+	test_blink ();
+
+	led_on ();
+	for ( ;; ) ;
 }
 
 /* THE END */

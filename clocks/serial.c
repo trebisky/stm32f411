@@ -169,6 +169,68 @@ show_n ( char *s, int val )
 	console_putc ( '\n' );
 }
 
+/* Kyu IO utilities */
+#define HEX(x)  ((x)<10 ? '0'+(x) : 'A'+(x)-10)
+
+#define PUTCHAR(x)      *buf++ = (x)
+
+/* single byte as xx */
+static char *
+shex2( char *buf, int val )
+{
+        PUTCHAR( HEX((val>>4)&0xf) );
+        PUTCHAR( HEX(val&0xf) );
+        return buf;
+}
+
+/* "short" as xxyy */
+static char *
+shex4( char *buf, int val )
+{
+        buf = shex2(buf,val>>8);
+        return shex2(buf,val);
+}
+
+/* "long" as aabbxxyy */
+static char *
+shex8( char *buf, int val )
+{
+        buf = shex2(buf,val>>24);
+        buf = shex2(buf,val>>16);
+        buf = shex2(buf,val>>8);
+        return shex2(buf,val);
+}
+
+
+static void
+print32 ( int val )
+{
+	char buf[9];
+
+	shex8 ( buf, val );
+	buf[8] = '\0';
+	console_puts ( buf );
+}
+
+void
+show32 ( char *s, int val )
+{
+	console_puts ( s );
+	print32 ( val );
+	console_putc ( '\n' );
+}
+
+void
+show_reg ( char *msg, int *addr )
+{
+	console_puts ( msg );
+	console_putc ( ' ' );
+	print32 ( (int) addr );
+	console_putc ( ' ' );
+	print32 ( *addr );
+	console_putc ( '\n' );
+}
+
 /* ------------------------------------------------------- */
 /* ------------------------------------------------------- */
 /* ------------------------------------------------------- */
@@ -308,37 +370,6 @@ serial_test ( void )
 /* Some utility IO stuff from Kyu follows */
 /* -------------------------------------------- */
 
-#define HEX(x)  ((x)<10 ? '0'+(x) : 'A'+(x)-10)
-
-#define PUTCHAR(x)      *buf++ = (x)
-
-/* single byte as xx */
-static char *
-shex2( char *buf, int val )
-{
-        PUTCHAR( HEX((val>>4)&0xf) );
-        PUTCHAR( HEX(val&0xf) );
-        return buf;
-}
-
-/* "short" as xxyy */
-static char *
-shex4( char *buf, int val )
-{
-        buf = shex2(buf,val>>8);
-        return shex2(buf,val);
-}
-
-/* "long" as aabbxxyy */
-static char *
-shex8( char *buf, int val )
-{
-        buf = shex2(buf,val>>24);
-        buf = shex2(buf,val>>16);
-        buf = shex2(buf,val>>8);
-        return shex2(buf,val);
-}
-
 void
 show16 ( char *s, int val )
 {
@@ -350,36 +381,6 @@ show16 ( char *s, int val )
 	serial_puts ( buf );
 	serial_putc ( '\n' );
 }
-
-static void
-print32 ( int val )
-{
-	char buf[9];
-
-	shex8 ( buf, val );
-	buf[8] = '\0';
-	serial_puts ( buf );
-}
-
-void
-show32 ( char *s, int val )
-{
-	serial_puts ( s );
-	print32 ( val );
-	serial_putc ( '\n' );
-}
-
-void
-show_reg ( char *msg, int *addr )
-{
-	serial_puts ( msg );
-	serial_putc ( ' ' );
-	print32 ( (int) addr );
-	serial_putc ( ' ' );
-	print32 ( *addr );
-	serial_putc ( '\n' );
-}
-
 #endif /* F103 */
 
 /* THE END */

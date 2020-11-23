@@ -43,11 +43,21 @@ struct rcc {
 #define CR_HSERDY	0x020000
 #define CR_HSEBYP	0x040000
 
+#define CR_PLLON	0x01000000
+#define CR_PLLRDY	0x02000000
+
 /* In the CONF */
 #define CONF_CLOCK_BITS		0x3
 #define CONF_HSI		0x0
 #define CONF_HSE		0x1
 #define CONF_PLL		0x2
+
+#define APB1_SHIFT	10
+#define APB2_SHIFT	13
+
+#define APB_DIV1	0
+#define APB_DIV2	4
+#define APB_DIV4	5
 
 /* On AHB1 */
 #define GPIOA_ENABLE	0x01
@@ -64,6 +74,165 @@ struct rcc {
 #define UART1_ENABLE	0x10
 #define UART3_ENABLE	0x20
 
+/* In the PLL register */
+
+#define PLL_RESERVED	0xF83C8000
+
+#define PLL_SRC_HSE	0x400000
+#define PLL_SRC_HSI	0x0
+
+#define PLL_N_SHIFT	6
+#define PLL_P_SHIFT	16
+#define PLL_Q_SHIFT	24
+
+/* Only 2 bits for this with special values
+ * actually these are (P/2)-1
+ */
+#define PLL_P_2		0
+#define PLL_P_4		1
+#define PLL_P_6		2
+#define PLL_P_8		3
+
+#define PLL_M_VAL	25			/* 25/25 feeds 1 Mhz to PLL */
+#define PLL_N_192	(192<<PLL_N_SHIFT)	/* PLL yiels 192 Mhz */
+#define PLL_N_128	(128<<PLL_N_SHIFT)	/* PLL yiels 128 Mhz */
+#define PLL_Q_VAL	(4<<PLL_Q_SHIFT)	/* 192/4 = 48 Mhz to USB */
+
+#define PLL_P_DIV_2	(PLL_P_2<<PLL_P_SHIFT)
+#define PLL_P_DIV_4	(PLL_P_4<<PLL_P_SHIFT)
+#define PLL_P_DIV_6	(PLL_P_6<<PLL_P_SHIFT)
+#define PLL_P_DIV_8	(PLL_P_8<<PLL_P_SHIFT)
+
+#define PLL_P_VAL_96	(PLL_P_2<<PLL_P_SHIFT)	/* 192/2 = 96 Mhz to cpu */
+#define PLL_P_VAL_48	(PLL_P_4<<PLL_P_SHIFT)	/* 192/4 = 48 Mhz to cpu */
+
+// ===========================
+// ===========================
+// ===========================
+// Pick one of the following
+
+// #define CLOCK_16	// no init, run from HSI at default
+#define CLOCK_32	// hsi doubled by PLL
+// #define CLOCK_25
+// #define CLOCK_48
+// #define CLOCK_96
+// #define CLOCK_HSI
+
+#ifdef CLOCK_48
+#define PLL_VAL ( PLL_M_VAL | PLL_N_192 | PLL_P_VAL_48 | PLL_Q_VAL )
+#else	/* CLOCK_96 */
+#define PLL_VAL ( PLL_M_VAL | PLL_N_192 | PLL_P_VAL_96 | PLL_Q_VAL )
+#endif
+
+/* For an experiment, see if we can run 16 in and out of the PLL */
+#define PLL_16 ( 16 | PLL_N_128 | PLL_P_DIV_8 | PLL_Q_VAL )
+#define PLL_32 ( 16 | PLL_N_128 | PLL_P_DIV_4 | PLL_Q_VAL )
+
+/* The PLL is an alternate 3rd clock source.
+ * We would like to run the CPU at 100 Mhz and
+ * the USB clock at 48 Mhz, but this cannot be done.
+ * But we can have the CPU at 96 Mhz and the proper
+ * 48 Mhz USB, or we could run the CPU at 100 and
+ * let the USB run at 50 (not good, but if you don't
+ * intend to use the USB, why not.
+ */
+static void
+cpu_clock_init_pll ( void )
+{
+	struct rcc *rp = RCC_BASE;
+	unsigned int xyz;
+
+	/* Turn on HSE oscillator */
+	rp->cr |= CR_HSEON;
+	while ( ! (rp->cr & CR_HSERDY) )
+	    ;
+
+	/* Configure PLL */
+	xyz = rp->pll & PLL_RESERVED;
+	xyz |= PLL_VAL;
+	xyz |= PLL_SRC_HSE;
+	rp->pll = xyz;
+
+	/* Turn on PLL */
+	rp->cr |= CR_PLLON;
+	while ( ! (rp->cr & CR_PLLRDY) )
+	    ;
+
+	// blinker ();
+	/* switch from HSI to PLL */
+	xyz = rp->conf;
+	xyz &= ~CONF_CLOCK_BITS;
+	xyz |= CONF_PLL;
+#ifdef CLOCK_96
+	xyz |= (APB_DIV2<<APB1_SHIFT);
+#endif
+	rp->conf = xyz;
+}
+
+/* Here we just switch to the PLL using the
+ * "on reset" values, which should give
+ * 96 Mhz
+ */
+static void
+cpu_clock_init_hsi ( void )
+{
+	struct rcc *rp = RCC_BASE;
+	unsigned int xyz;
+
+	/* Turn on PLL */
+	rp->cr |= CR_PLLON;
+	while ( ! (rp->cr & CR_PLLRDY) )
+	    ;
+
+	/*
+	show_reg ( "PLL", &rp->pll );
+	show_reg ( "CR", &rp->cr );
+	show_reg ( "CONF", &rp->conf );
+	return;
+	*/
+
+	/* switch from HSI to PLL */
+	/* The APB1 bus must run no faster than 50,
+	 * The APB2 bus can run up to 100.
+	 */
+	xyz = rp->conf;
+	xyz &= ~CONF_CLOCK_BITS;
+	xyz |= CONF_PLL;
+	xyz |= (APB_DIV2<<APB1_SHIFT);
+	show_reg ( "CONF is:", &rp->conf );
+	show32 ( "CONF will be:", xyz );
+	rp->conf = xyz;
+}
+
+static void
+cpu_clock_init_32 ( void )
+{
+	struct rcc *rp = RCC_BASE;
+	unsigned int xyz;
+
+	/* Configure PLL */
+	xyz = rp->pll & PLL_RESERVED;
+	// xyz |= PLL_16;
+	xyz |= PLL_32;
+	xyz |= PLL_SRC_HSI;
+	rp->pll = xyz;
+
+	/* Turn on PLL */
+	rp->cr |= CR_PLLON;
+	while ( ! (rp->cr & CR_PLLRDY) )
+	    ;
+
+	/* switch from HSI to PLL */
+	/* The APB1 bus must run no faster than 50,
+	 * The APB2 bus can run up to 100.
+	 */
+	xyz = rp->conf;
+	xyz &= ~CONF_CLOCK_BITS;
+	xyz |= CONF_PLL;
+	// xyz |= (APB_DIV2<<APB1_SHIFT);
+	rp->conf = xyz;
+}
+
 /* Some initial attempts locked up the chip.
  * Recovery required holding down BOOT0 and
  * doing reset, then SWD reflash would work.
@@ -73,14 +242,10 @@ struct rcc {
  * This is apparently correct for my board.
  */
 static void
-cpu_clock_init ( void )
+cpu_clock_init_25 ( void )
 {
 	struct rcc *rp = RCC_BASE;
 	unsigned int xyz;
-
-	/* Set up for external oscillator */
-	// rp->cr &= ~CR_HSEON;
-	// rp->cr |= CR_HSEBYP;
 
 	/* Turn on HSE oscillator */
 	rp->cr |= CR_HSEON;
@@ -94,16 +259,13 @@ cpu_clock_init ( void )
 	rp->conf = xyz;
 }
 
-/* Someday this RCC stuff will migrate to rcc.c or something of the sort.
- * Note that only GPIO A,B,C are wired to pins, so it is
+/* Note that only GPIO A,B,C are wired to pins, so it is
  * pointless to power up D,E,H
  */
 void
 rcc_init ( void )
 {
 	struct rcc *rp = RCC_BASE;
-
-	cpu_clock_init ();
 
 	/* The F411 chip powers up with resets not being asserted,
 	 *  so we don't need to do anything with resets here.
@@ -117,33 +279,73 @@ rcc_init ( void )
 
 	rp->apb2_e |= UART1_ENABLE;
 	rp->apb2_e |= UART3_ENABLE;
+
+#ifdef CLOCK_25
+	cpu_clock_init_25 ();
+#endif
+#if defined(CLOCK_96) || defined(CLOCK_48)
+	cpu_clock_init_pll ();
+#endif
+#ifdef CLOCK_HSI
+	cpu_clock_init_hsi ();
+#endif
+#ifdef CLOCK_32
+	cpu_clock_init_32 ();
+#endif
 }
 
-// On the F103 blue pill, we had an external 8 Mhz crystal
-//  and set the PLL to multiply by 9 to get 72 Mhz.
-// #define PCLK1           36000000 -- F103
-// #define PCLK2           72000000 -- F103
+/* Hook so we can use serial IO for debug
+ * later after serial is initialized.
+ */
+void
+rcc_debug ( void )
+{
+	// cpu_clock_init_xxx ();
+
+}
 
 /* On the Black Pill boards that I have, we have an external
- * 25 Mhz crystal oscillator.  Presumably we will multiply
- * that by 4 someday to get 100 Mhz, but for now, we go with
- * the default multiplier of 1.
- * This 25 Mhz external clock is HSE and probably must be
- * configured before it will be used.
+ * 25 Mhz crystal.
+ * We will multiply that by 4 someday, somehow to get 100 Mhz.
+ * Actually we have to settle for 96 Mhz if we want
+ * a proper USB clock.
  *
- * Unlike the F103, as near as I can tell APB1 and APB2 run
- * at the same full clock rate ( 100 Mhz someday ).
+ * Like the F103, the APB1 domain cannot run full speed like
+ *  the APB2 can.  On the F411, 50 Mhz is the limit.
  *
  * There is also a 16 Mhz RC internal oscillator (HSI)
- * I am betting that it gets used by default.
- * And that turns out to be true.
+ * The chip fires up using it.
  */
 
-/* These must be maintained by hand */
-// #define PCLK1           16000000
-// #define PCLK2           16000000
+#ifdef CLOCK_16
+#define PCLK1           16000000
+#define PCLK2           16000000
+#endif
+
+#ifdef CLOCK_32
+#define PCLK1           32000000
+#define PCLK2           32000000
+#endif
+
+#ifdef CLOCK_25
 #define PCLK1           25000000
 #define PCLK2           25000000
+#endif
+
+#ifdef CLOCK_48
+#define PCLK1           48000000
+#define PCLK2           48000000
+#endif
+
+#ifdef CLOCK_96
+#define PCLK1           48000000
+#define PCLK2           96000000
+#endif
+
+#ifdef CLOCK_HSI
+#define PCLK1           48000000
+#define PCLK2           96000000
+#endif
 
 /* These will differ if we run with a clock over 50 Mhz, as
  * PCLK1 must not exceed 50.
