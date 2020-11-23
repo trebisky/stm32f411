@@ -64,13 +64,46 @@ struct rcc {
 #define UART1_ENABLE	0x10
 #define UART3_ENABLE	0x20
 
-/* Note that only GPIO A,B,C are wired to pins, so it is
+/* Some initial attempts locked up the chip.
+ * Recovery required holding down BOOT0 and
+ * doing reset, then SWD reflash would work.
+ *
+ * WeAct schematic shows a crystal on HSE,
+ *  not a crystal oscillator.
+ * This is apparently correct for my board.
+ */
+static void
+cpu_clock_init ( void )
+{
+	struct rcc *rp = RCC_BASE;
+	unsigned int xyz;
+
+	/* Set up for external oscillator */
+	// rp->cr &= ~CR_HSEON;
+	// rp->cr |= CR_HSEBYP;
+
+	/* Turn on HSE oscillator */
+	rp->cr |= CR_HSEON;
+	while ( ! (rp->cr & CR_HSERDY) )
+	    ;
+
+	/* switch from HSI to HSE */
+	xyz = rp->conf;
+	xyz &= ~CONF_CLOCK_BITS;
+	xyz |= CONF_HSE;
+	rp->conf = xyz;
+}
+
+/* Someday this RCC stuff will migrate to rcc.c or something of the sort.
+ * Note that only GPIO A,B,C are wired to pins, so it is
  * pointless to power up D,E,H
  */
 void
 rcc_init ( void )
 {
 	struct rcc *rp = RCC_BASE;
+
+	cpu_clock_init ();
 
 	/* The F411 chip powers up with resets not being asserted,
 	 *  so we don't need to do anything with resets here.
@@ -107,8 +140,10 @@ rcc_init ( void )
  */
 
 /* These must be maintained by hand */
-#define PCLK1           16000000
-#define PCLK2           16000000
+// #define PCLK1           16000000
+// #define PCLK2           16000000
+#define PCLK1           25000000
+#define PCLK2           25000000
 
 /* These will differ if we run with a clock over 50 Mhz, as
  * PCLK1 must not exceed 50.

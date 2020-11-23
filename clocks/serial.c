@@ -169,4 +169,217 @@ show_n ( char *s, int val )
 	console_putc ( '\n' );
 }
 
+/* ------------------------------------------------------- */
+/* ------------------------------------------------------- */
+/* ------------------------------------------------------- */
+
+#ifdef F103
+
+void
+serial1_handler ( void )
+{
+}
+
+void
+serial2_handler ( void )
+{
+}
+
+void
+serial3_handler ( void )
+{
+	struct uart *up = UART3_BASE;
+	int c;
+
+	up->status = 0;
+
+	c = up->data & 0x7f;
+	serial_putc ( c );
+}
+
+#define SERIAL1_IRQ	37
+#define SERIAL2_IRQ	38
+#define SERIAL3_IRQ	39
+
+/* ------------------------------------------------------- */
+
+static void
+uart_rx_enable ( struct uart *up )
+{
+	    up->cr1 |= CR1_RXIE;
+}
+
+void
+serial_init ( void )
+{
+	gpio_uart1 ();
+	// uart_init ( UART1_BASE, 9600 );
+	// uart_init ( UART1_BASE, 38400 );
+	// uart_init ( UART1_BASE, 57600 ); ??
+	uart_init ( UART1_BASE, 115200 );
+
+	/* SAM_M8Q gps is 9600, no parity, one stop */
+	gpio_uart2 ();
+	uart_init ( UART2_BASE, 9600 );
+
+	gpio_uart3 ();
+	uart_init ( UART3_BASE, 9600 );
+}
+
+void
+serial_putc ( int c )
+{
+	struct uart *up = UART1_BASE;
+
+	if ( c == '\n' )
+	    serial_putc ( '\r' );
+
+	while ( ! (up->status & ST_TXE) )
+	    ;
+	up->data = c;
+}
+
+/* Polled read (spins forever on console) */
+int
+serial_getc ( void )
+{
+	struct uart *up = UART1_BASE;
+
+	while ( ! (up->status & ST_RXNE) )
+	    ;
+	return up->data & 0x7f;
+}
+
+
+void
+serial_puts ( char *s )
+{
+	while ( *s )
+	    serial_putc ( *s++ );
+}
+
+/* Quick and dirty */
+int
+serial2_getc ( void )
+{
+	struct uart *up = UART2_BASE;
+
+	while ( ! (up->status & ST_RXNE) )
+	    ;
+	return up->data & 0x7f;
+}
+
+/* Quick and dirty */
+int
+serial3_getc ( void )
+{
+	struct uart *up = UART3_BASE;
+
+	while ( ! (up->status & ST_RXNE) )
+	    ;
+	return up->data & 0x7f;
+}
+
+/* For this test, I have a Sparkfun ublox sAM-M8Q GPS unit
+ * connected with the Tx on the GPS going to A3 on the STM32
+ * (serial 2, Rx).
+ * To test with serial 3, Rx -  I can use pin B11
+ *
+ *  9-4-2020 I tested with both Serial 2 and 3.
+ */
+void
+serial_test ( void )
+{
+	int c;
+
+	nvic_enable ( SERIAL3_IRQ );
+	uart_rx_enable ( UART3_BASE );
+	for ( ;; ) ;
+
+	/* Original polling test */
+	for ( ;; ) {
+	    // c = serial2_getc ();
+	    c = serial3_getc ();
+	    serial_putc ( c );
+	}
+}
+
+/* -------------------------------------------- */
+/* Some utility IO stuff from Kyu follows */
+/* -------------------------------------------- */
+
+#define HEX(x)  ((x)<10 ? '0'+(x) : 'A'+(x)-10)
+
+#define PUTCHAR(x)      *buf++ = (x)
+
+/* single byte as xx */
+static char *
+shex2( char *buf, int val )
+{
+        PUTCHAR( HEX((val>>4)&0xf) );
+        PUTCHAR( HEX(val&0xf) );
+        return buf;
+}
+
+/* "short" as xxyy */
+static char *
+shex4( char *buf, int val )
+{
+        buf = shex2(buf,val>>8);
+        return shex2(buf,val);
+}
+
+/* "long" as aabbxxyy */
+static char *
+shex8( char *buf, int val )
+{
+        buf = shex2(buf,val>>24);
+        buf = shex2(buf,val>>16);
+        buf = shex2(buf,val>>8);
+        return shex2(buf,val);
+}
+
+void
+show16 ( char *s, int val )
+{
+	char buf[5];
+
+	serial_puts ( s );
+	shex4 ( buf, val );
+	buf[4] = '\0';
+	serial_puts ( buf );
+	serial_putc ( '\n' );
+}
+
+static void
+print32 ( int val )
+{
+	char buf[9];
+
+	shex8 ( buf, val );
+	buf[8] = '\0';
+	serial_puts ( buf );
+}
+
+void
+show32 ( char *s, int val )
+{
+	serial_puts ( s );
+	print32 ( val );
+	serial_putc ( '\n' );
+}
+
+void
+show_reg ( char *msg, int *addr )
+{
+	serial_puts ( msg );
+	serial_putc ( ' ' );
+	print32 ( (int) addr );
+	serial_putc ( ' ' );
+	print32 ( *addr );
+	serial_putc ( '\n' );
+}
+
+#endif /* F103 */
+
 /* THE END */
