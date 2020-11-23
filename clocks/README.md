@@ -23,3 +23,7 @@ a bike ride and got the idea.  Maybe 96 Mhz is too
 fast for the flash memory without some configuring.
 So I tried just using the PLL to generate 16 Mhz and
 that worked fine, confirming my idea.
+
+The flash wait states fix everything.
+Turning on the I and D caches (and prefetch) make
+a big difference in making things run faster.

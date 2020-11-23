@@ -4,6 +4,53 @@
  * Reset and Clock Control for the STM32F411
  */
 
+/* ====================================================================== */
+
+/* This doesn't really belong here, but here it is.
+ */
+
+struct flash {
+	volatile unsigned int acr;
+	volatile unsigned int keyr;
+	volatile unsigned int optkeyr;
+	volatile unsigned int sr;
+	volatile unsigned int cr;
+	volatile unsigned int optcr;
+};
+
+#define FLASH_BASE (struct flash *) 0x40023c00
+
+/* In the ACR */
+#define FL_PRFTEN	0x100
+#define FL_ICEN		0x200
+#define FL_DCEN		0x400
+#define FL_ICRST	0x800
+#define FL_DCRST	0x1000
+
+void
+flash_waits ( int nw )
+{
+	struct flash *fp = FLASH_BASE;
+	unsigned int xyz;
+
+	xyz = fp->acr;
+	xyz &= ~0xf;
+	xyz |= nw;
+	fp->acr = xyz;
+}
+
+/* Enable data cache, instruction cache, and prefetch */
+static void
+flash_cache_enable ( void )
+{
+	struct flash *fp = FLASH_BASE;
+
+	fp->acr |= FL_PRFTEN | FL_ICEN | FL_DCEN;
+}
+
+/* ====================================================================== */
+/* ====================================================================== */
+
 struct rcc {
 	volatile unsigned int cr;	/* 0 - control reg */
 	volatile unsigned int pll;	/* 4 - pll config */
@@ -112,11 +159,11 @@ struct rcc {
 // Pick one of the following
 
 // #define CLOCK_16	// no init, run from HSI at default
-#define CLOCK_32	// hsi doubled by PLL
+// #define CLOCK_32	// hsi doubled by PLL
 // #define CLOCK_25
 // #define CLOCK_48
-// #define CLOCK_96
-// #define CLOCK_HSI
+#define CLOCK_96
+// #define CLOCK_HSI_96
 
 #ifdef CLOCK_48
 #define PLL_VAL ( PLL_M_VAL | PLL_N_192 | PLL_P_VAL_48 | PLL_Q_VAL )
@@ -126,7 +173,9 @@ struct rcc {
 
 /* For an experiment, see if we can run 16 in and out of the PLL */
 #define PLL_16 ( 16 | PLL_N_128 | PLL_P_DIV_8 | PLL_Q_VAL )
+
 #define PLL_32 ( 16 | PLL_N_128 | PLL_P_DIV_4 | PLL_Q_VAL )
+#define PLL_96 ( 16 | PLL_N_192 | PLL_P_DIV_2 | PLL_Q_VAL )
 
 /* The PLL is an alternate 3rd clock source.
  * We would like to run the CPU at 100 Mhz and
@@ -179,17 +228,20 @@ cpu_clock_init_hsi ( void )
 	struct rcc *rp = RCC_BASE;
 	unsigned int xyz;
 
+#ifdef ENSURE_HSI
+	/* Configure PLL */
+	xyz = rp->pll & PLL_RESERVED;
+	// xyz |= PLL_16;
+	// xyz |= PLL_32;
+	xyz |= PLL_96;
+	xyz |= PLL_SRC_HSI;
+	rp->pll = xyz;
+#endif
+
 	/* Turn on PLL */
 	rp->cr |= CR_PLLON;
 	while ( ! (rp->cr & CR_PLLRDY) )
 	    ;
-
-	/*
-	show_reg ( "PLL", &rp->pll );
-	show_reg ( "CR", &rp->cr );
-	show_reg ( "CONF", &rp->conf );
-	return;
-	*/
 
 	/* switch from HSI to PLL */
 	/* The APB1 bus must run no faster than 50,
@@ -199,8 +251,8 @@ cpu_clock_init_hsi ( void )
 	xyz &= ~CONF_CLOCK_BITS;
 	xyz |= CONF_PLL;
 	xyz |= (APB_DIV2<<APB1_SHIFT);
-	show_reg ( "CONF is:", &rp->conf );
-	show32 ( "CONF will be:", xyz );
+	// show_reg ( "CONF is:", &rp->conf );
+	// show32 ( "CONF will be:", xyz );
 	rp->conf = xyz;
 }
 
@@ -262,6 +314,17 @@ cpu_clock_init_25 ( void )
 /* Note that only GPIO A,B,C are wired to pins, so it is
  * pointless to power up D,E,H
  */
+
+/* The RM has a table in section 3 for various voltages and
+ * processor speeds that indicates how many flash wait states
+ * are required.  I always run at 3.3 volts, so the rules
+ * are as follows:
+ *
+ *  0-30 Mhz 0 waits
+ * 30-64 Mhz 1 wait
+ * 64-90 Mhz 2 waits
+ * 90-100 Mhz 3 waits
+ */
 void
 rcc_init ( void )
 {
@@ -283,15 +346,24 @@ rcc_init ( void )
 #ifdef CLOCK_25
 	cpu_clock_init_25 ();
 #endif
-#if defined(CLOCK_96) || defined(CLOCK_48)
+#if defined(CLOCK_96)
+	flash_waits ( 3 );
 	cpu_clock_init_pll ();
 #endif
-#ifdef CLOCK_HSI
+#if defined(CLOCK_48)
+	flash_waits ( 1 );
+	cpu_clock_init_pll ();
+#endif
+#ifdef CLOCK_HSI_96
+	flash_waits ( 3 );
 	cpu_clock_init_hsi ();
 #endif
 #ifdef CLOCK_32
+	flash_waits ( 1 );
 	cpu_clock_init_32 ();
 #endif
+
+	flash_cache_enable ();
 }
 
 /* Hook so we can use serial IO for debug
@@ -327,6 +399,11 @@ rcc_debug ( void )
 #define PCLK2           32000000
 #endif
 
+#ifdef CLOCK_HSI_96
+#define PCLK1           48000000
+#define PCLK2           96000000
+#endif
+
 #ifdef CLOCK_25
 #define PCLK1           25000000
 #define PCLK2           25000000
@@ -338,11 +415,6 @@ rcc_debug ( void )
 #endif
 
 #ifdef CLOCK_96
-#define PCLK1           48000000
-#define PCLK2           96000000
-#endif
-
-#ifdef CLOCK_HSI
 #define PCLK1           48000000
 #define PCLK2           96000000
 #endif
