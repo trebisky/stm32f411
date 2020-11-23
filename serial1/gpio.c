@@ -59,6 +59,61 @@ gpio_af ( int gpio, int pin, int val )
 	}
 }
 
+/* This is a 2 bit field */
+void
+gpio_mode ( int gpio, int pin, int val )
+{
+	struct gpio *gp;
+	int shift;
+
+	gp = gpio_bases[gpio];
+	shift = pin * 2;
+	gp->mode &= ~(0x3<<shift);
+	gp->mode |= val<<shift;
+}
+
+/* kludge for now */
+void
+gpio_uart ( int gpio, int pin, int val )
+{
+	struct gpio *gp;
+	int shift;
+
+	/* XXX ignores val */
+	gp = gpio_bases[gpio];
+
+	gp->otype &= ~(1<<pin);
+
+	shift = pin * 2;
+	gp->ospeed |= (3<<shift);
+
+	gp->pupd &= ~(3<<shift);
+}
+
+/*
+ra=GET32(GPIOA_MODER);
+    ra&=~(3<<4); //PA2
+    ra&=~(3<<6); //PA3
+    ra|=2<<4; //PA2
+    ra|=2<<6; //PA3
+    PUT32(GPIOA_MODER,ra);
+
+    ra=GET32(GPIOA_OTYPER);
+    ra&=~(1<<2); //PA2
+    ra&=~(1<<3); //PA3
+    PUT32(GPIOA_OTYPER,ra);
+
+    ra=GET32(GPIOA_OSPEEDR);
+    ra|=3<<4; //PA2
+    ra|=3<<6; //PA3
+    PUT32(GPIOA_OSPEEDR,ra);
+
+    ra=GET32(GPIOA_PUPDR);
+    ra&=~(3<<4); //PA2
+    ra&=~(3<<6); //PA3
+    PUT32(GPIOA_PUPDR,ra);
+ */
+
 /* Note that UART1 can be moved around a lot.
  * I make a choice here.
  * I suppose a general interface would allow this to
@@ -69,7 +124,12 @@ gpio_uart_init ( int uart )
 {
 	if ( uart == UART1 ) {
 	    gpio_af ( GPIOA, 9, 7 );	/* Tx */
+	    gpio_mode ( GPIOA, 9, 2 );	/* Tx */
+	    gpio_uart ( GPIOA, 9, 99 );	/* Tx */
+
 	    gpio_af ( GPIOA, 10, 7 );	/* Rx */
+	    gpio_mode ( GPIOA, 10, 2 );
+	    gpio_uart ( GPIOA, 10, 99 );
 	    // gpio_af ( GPIOA, 15, 7 ); /* Tx */
 	    // gpio_af ( GPIOB, 3, 7 );	/* Rx */
 	    // gpio_af ( GPIOB, 6, 7 )	/* Tx */
@@ -118,28 +178,6 @@ void
 led_off ( void )
 {
 	led_gp->bsrr = off_mask;
-}
-
-/* ========================================================== */
-/* Does this belong here?  I don't think so. */
-/* Someday we will write a proper delay routine and dump this */
-
-/* On the STM32F103, this gives a blink rate of about 2.7 Hz */
-/* i.e. the delay time is about 0.2 seconds (200 ms) */
-#define FAST	200
-
-#define FASTER	50
-#define SLOWER	800
-#define EVEN_SLOWER	1600
-
-void
-blink_delay ( void )
-{
-	// volatile int count = 1000 * FAST;
-	volatile unsigned int count = 1000 * EVEN_SLOWER;
-
-	while ( count-- )
-	    ;
 }
 
 /* THE END */
