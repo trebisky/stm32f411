@@ -164,8 +164,8 @@ led_init ( void )
 	led_gp->mode |= (1<<shift);
 	led_gp->otype &= ~(1<<pin);
 
-	on_mask = 1 << pin;
-	off_mask = 1 << (pin+16);
+	off_mask = 1 << pin;
+	on_mask = 1 << (pin+16);
 }
 
 void

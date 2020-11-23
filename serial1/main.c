@@ -18,25 +18,27 @@
 #define EVEN_SLOWER	1600
 
 void
-blink_delay ( void )
+blink_delay ( int rate )
 {
-	volatile int count = 1000 * FAST;
+	// volatile int count = 1000 * FAST;
 	// volatile unsigned int count = 1000 * EVEN_SLOWER;
+	volatile unsigned int count = 1000 * rate;
 
 	while ( count-- )
 	    ;
 }
 
+/* The blinking will make you crazy */
 static void
 test1 ( void )
 {
 	for ( ;; ) {
 	    led_on ();
 	    console_putc ( 'X' );
-	    blink_delay ();
+	    blink_delay ( EVEN_SLOWER );
 	    led_off ();
 	    console_putc ( '-' );
-	    blink_delay ();
+	    blink_delay ( EVEN_SLOWER );
 	}
 }
 
@@ -44,7 +46,18 @@ static void
 test2 ( void )
 {
 	for ( ;; ) {
-	    console_putc ( 'X' );
+	    blink_delay ( FAST );
+	    console_putc ( '8' );
+	}
+}
+
+static void
+test3 ( void )
+{
+	for ( ;; ) {
+	    blink_delay ( EVEN_SLOWER );
+	    blink_delay ( EVEN_SLOWER );
+	    console_puts ( "Keep a stiff upper lip\n" );
 	}
 }
 
@@ -55,9 +68,11 @@ startup ( void )
 	serial_init ();
 
 	led_init ();
+	led_off ();
 
-	test1 ();
+	// test1 ();
 	// test2 ();
+	test3 ();
 }
 
 /* THE END */

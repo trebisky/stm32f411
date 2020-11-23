@@ -13,10 +13,12 @@
  * However my "3" is what they call "6" in the manual.
  * 
  * On the F411, USART1 and USART6 are on the APB2 bus.
- * On the F411, USART2 is on the APB2 bus.
-
- * F103: Uart 1 is on the APB2 bus (running at 72 Mhz).
- * F103: Uart 2,3 are on the APB1 bus (running at 36 Mhz).
+ * On the F411, USART2 is on the APB1 bus.
+ *
+ * On the F411, after reset, with no fiddling with RCC
+ *  settings, both are running at 16 Mhz.
+ *  Apparently on the F411 both APB1 and APB2
+ *   always run at the same rate.
  */
 
 #include "f411.h"
@@ -120,6 +122,25 @@ console_putc ( int c )
 	up->data = c;
 }
 
+/* Polled read (spins forever on console) */
+int
+console_getc ( void )
+{
+	struct uart *up = UART1_BASE;
+
+	while ( ! (up->status & ST_RXNE) )
+	    ;
+	return up->data & 0x7f;
+}
+
+
+void
+console_puts ( char *s )
+{
+	while ( *s )
+	    console_putc ( *s++ );
+}
+
 /* ------------------------------------------------------- */
 /* ------------------------------------------------------- */
 /* ------------------------------------------------------- */
@@ -153,24 +174,6 @@ serial3_handler ( void )
 #define SERIAL3_IRQ	39
 
 /* ------------------------------------------------------- */
-
-static void
-uart_init ( struct uart *up, int baud )
-{
-	/* 1 start bit, even parity */
-	if ( up == UART1_BASE )
-	    up->cr1 = CR1_CONSOLE;
-	else
-	    up->cr1 = CR1_GPS;
-	up->cr2 = 0;
-	up->cr3 = 0;
-	up->gtp = 0;
-
-	if ( up == UART1_BASE )
-	    up->baud = get_pclk2() / baud;
-	else
-	    up->baud = get_pclk1() / baud;
-}
 
 static void
 uart_rx_enable ( struct uart *up )
