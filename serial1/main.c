@@ -61,6 +61,17 @@ test3 ( void )
 	}
 }
 
+static void
+test4 ( void )
+{
+	int xx;
+	for ( xx = 1; ; xx++ ) {
+	    blink_delay ( EVEN_SLOWER );
+	    blink_delay ( EVEN_SLOWER );
+	    show_n ( "Testing", xx );
+	}
+}
+
 void
 startup ( void )
 {
@@ -72,7 +83,8 @@ startup ( void )
 
 	// test1 ();
 	// test2 ();
-	test3 ();
+	// test3 ();
+	test4 ();
 }
 
 /* THE END */

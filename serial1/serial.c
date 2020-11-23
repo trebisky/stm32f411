@@ -141,6 +141,34 @@ console_puts ( char *s )
 	    console_putc ( *s++ );
 }
 
+/* Just for fun, recursive base 10 print
+ */
+void
+printn ( int x )
+{
+	int d;
+
+	if ( x == 0 )
+	    return;
+	if ( x < 0 ) {
+	    console_putc ( '-' );
+	    printn ( -x );
+	    return;
+	}
+	d = x % 10;
+	printn ( x / 10 );
+	console_putc ( '0' + d );
+}
+
+void
+show_n ( char *s, int val )
+{
+	console_puts ( s );
+	console_putc ( ' ' );
+	printn ( val );
+	console_putc ( '\n' );
+}
+
 /* ------------------------------------------------------- */
 /* ------------------------------------------------------- */
 /* ------------------------------------------------------- */
@@ -352,33 +380,6 @@ show_reg ( char *msg, int *addr )
 	serial_putc ( '\n' );
 }
 
-/* Just for fun, recursive base 10 print
- */
-void
-printn ( int x )
-{
-	int d;
-
-	if ( x == 0 )
-	    return;
-	if ( x < 0 ) {
-	    serial_putc ( '-' );
-	    printn ( -x );
-	    return;
-	}
-	d = x % 10;
-	printn ( x / 10 );
-	serial_putc ( '0' + d );
-}
-
-void
-show_n ( char *s, int val )
-{
-	serial_puts ( s );
-	serial_putc ( ' ' );
-	printn ( val );
-	serial_putc ( '\n' );
-}
 #endif /* F103 */
 
 /* THE END */
