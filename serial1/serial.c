@@ -19,6 +19,8 @@
  * F103: Uart 2,3 are on the APB1 bus (running at 36 Mhz).
  */
 
+#include "f411.h"
+
 /* This is the same register layout as the STM32F103,
  * which is handy.
  */
@@ -100,7 +102,7 @@ uart_init ( struct uart *up, int baud )
 void
 serial_init ( void )
 {
-	gpio_uart_init ( 1 );
+	gpio_uart_init ( UART1 );
 	uart_init ( UART1_BASE, 115200 );
 }
 

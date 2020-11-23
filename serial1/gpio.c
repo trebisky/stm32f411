@@ -7,10 +7,7 @@
  * Also includes LED routines
  */
 
-/* names to index the bases array */
-#define GPIOA	0
-#define GPIOB	1
-#define GPIOC	2
+#include "f411.h"
 
 /* Where is the LED ?? */
 #define LED_PIN		13	/* PC13 */
@@ -70,17 +67,17 @@ gpio_af ( int gpio, int pin, int val )
 void
 gpio_uart_init ( int uart )
 {
-	if ( uart == 1 ) {
+	if ( uart == UART1 ) {
 	    gpio_af ( GPIOA, 9, 7 );	/* Tx */
 	    gpio_af ( GPIOA, 10, 7 );	/* Rx */
 	    // gpio_af ( GPIOA, 15, 7 ); /* Tx */
 	    // gpio_af ( GPIOB, 3, 7 );	/* Rx */
 	    // gpio_af ( GPIOB, 6, 7 )	/* Tx */
 	    // gpio_af ( GPIOB, 7, 7 );	/* Rx */
-	} else if ( uart == 2 ) {
+	} else if ( uart == UART2 ) {
 	    gpio_af ( GPIOA, 2, 7 );	/* Tx */
 	    gpio_af ( GPIOA, 3, 7 );	/* Rx */
-	} else { /* uart 3 */
+	} else { /* UART3 */
 	    gpio_af ( GPIOC, 6, 7 );	/* Tx */
 	    gpio_af ( GPIOC, 7, 7 );	/* Rx */
 	}
