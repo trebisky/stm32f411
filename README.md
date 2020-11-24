@@ -23,4 +23,5 @@ Here is sort of an index to what you find here:
 * ST-Link - initial experiments with openocd and my ST-Link adapter
 * blink1 - the most basic LED blinking demo I can manage
 * serial1 - basic serial IO (uart) without interrupts
-* clocks - get the clock running at 25 or 100 Mhz, not 16
+* clocks - get the clock running at 25 or 96 Mhz, not 16
+* serial2 - test all 3 uarts, add nice printf scheme
