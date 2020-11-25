@@ -29,17 +29,19 @@
 #include <stdarg.h>
 #include "f411.h"
 
+void show_reg ( char *msg, int *addr );
+
 /* This is the same register layout as the STM32F103,
  * which is handy.
  */
 struct uart {
-        volatile unsigned long status;  /* 00 */
-        volatile unsigned long data;    /* 04 */
-        volatile unsigned long baud;    /* 08 */
-        volatile unsigned long cr1;     /* 0c */
-        volatile unsigned long cr2;     /* 10 */
-        volatile unsigned long cr3;     /* 14 */
-        volatile unsigned long gtp;     /* 18 - guard time and prescaler */
+        volatile unsigned int status;  /* 00 */
+        volatile unsigned int data;    /* 04 */
+        volatile unsigned int baud;    /* 08 */
+        volatile unsigned int cr1;     /* 0c */
+        volatile unsigned int cr2;     /* 10 */
+        volatile unsigned int cr3;     /* 14 */
+        volatile unsigned int gtp;     /* 18 - guard time and prescaler */
 };
 
 /* These are different for the F411
@@ -51,9 +53,9 @@ struct uart {
 #define UART2_BASE      (struct uart *) 0x40004400
 #define UART3_BASE      (struct uart *) 0x40011400
 
-#define SERIAL1_IRQ	37
-#define SERIAL2_IRQ	38
-#define SERIAL3_IRQ	71
+#define UART1_IRQ	37
+#define UART2_IRQ	38
+#define UART3_IRQ	71
 
 static struct uart *uart_bases[] = {
     UART1_BASE, UART2_BASE, UART3_BASE
@@ -62,7 +64,7 @@ static struct uart *uart_bases[] = {
 #define NUM_UARTS 2
 
 struct uart_stuff {
-	vfptr uart_hook;
+	ifptr uart_hook;
 };
 
 static struct uart_stuff uart_info[NUM_UARTS];
@@ -103,14 +105,29 @@ static struct uart_stuff uart_info[NUM_UARTS];
 
 /* ========================================================================= */
 
+/* These give the data raw, no mapping of \r to \n */
 void
 uart1_handler ( void )
 {
+	struct uart *up = UART1_BASE;
+
+	/* clear the interrupt */
+	up->status = 0;
+
+	/* We only enable interrupts when we have a hook fn */
+	(*uart_info[UART1].uart_hook) ( up->data & 0x7f );
 }
 
 void
 uart2_handler ( void )
 {
+	struct uart *up = UART2_BASE;
+
+	/* clear the interrupt */
+	up->status = 0;
+
+	/* We only enable interrupts when we have a hook fn */
+	(*uart_info[UART2].uart_hook) ( up->data & 0x7f );
 }
 
 /* The baud rate.  This is subdivided from the bus clock.
@@ -126,6 +143,7 @@ serial_begin ( int uart, int baud )
 	gpio_uart_init ( uart );
 
 	up = uart_bases[uart];
+	uart_info[uart].uart_hook = (ifptr) 0;
 
 	/* 1 start bit, even parity */
 	up->cr1 = CR1_CONSOLE;
@@ -149,6 +167,16 @@ serial_available ( int uart )
 
 	return (up->status & ST_RXNE);
 }
+
+#ifdef notdef
+void
+serial_debug ( int uart )
+{
+	struct uart *up = uart_bases[uart];
+
+	show_reg ( "Serial status:", (int *) &up->status );
+}
+#endif
 
 /* Polled read (blocks)
  * Not often called, we usually call
@@ -176,9 +204,19 @@ serial_getc ( int uart )
 }
 
 void
-serial_read_hookup ( int uart, vfptr fn )
+serial_read_hookup ( int uart, ifptr fn )
 {
+	struct uart *up = uart_bases[uart];
+
 	uart_info[uart].uart_hook = fn;
+
+	up->cr1 |= CR1_RXIE;
+
+	/* This is essential */
+	if ( uart == UART1 )
+	    nvic_enable ( UART1_IRQ );
+	else
+	    nvic_enable ( UART2_IRQ );
 }
 
 void
@@ -417,7 +455,7 @@ asnprintf (char *abuf, unsigned int size, const char *fmt, va_list args)
 	    buf = shex2 ( buf, end, va_arg(args,int) & 0xff );
 	    continue;
 	}
-	if ( c == 'h' ) {
+	if ( c == 'h' || c == 'X' ) {
 	    buf = shex8 ( buf, end, va_arg(args,int) );
 	    continue;
 	}
@@ -451,6 +489,23 @@ serial_printf ( int fd, char *fmt, ... )
 
         serial_puts ( fd, buf );
 }
+
+/* Handy now and then */
+void
+show_reg ( char *msg, int *addr )
+{
+	printf ( "%s %h %h\n", msg, (int) addr, *addr );
+
+	/*
+	console_puts ( msg );
+	console_putc ( ' ' );
+	print32 ( (int) addr );
+	console_putc ( ' ' );
+	print32 ( *addr );
+	console_putc ( '\n' );
+	*/
+}
+
 
 /* ========================================================================= */
 /* ========================================================================= */
@@ -546,17 +601,6 @@ show32 ( char *s, int val )
 {
 	console_puts ( s );
 	print32 ( val );
-	console_putc ( '\n' );
-}
-
-void
-show_reg ( char *msg, int *addr )
-{
-	console_puts ( msg );
-	console_putc ( ' ' );
-	print32 ( (int) addr );
-	console_putc ( ' ' );
-	print32 ( *addr );
 	console_putc ( '\n' );
 }
 

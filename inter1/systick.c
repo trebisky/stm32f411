@@ -116,6 +116,7 @@ void
 systick_hookup ( vfptr fn )
 {
 	systick_hook = fn;
+	show_reg ( "systick hook", &systick_hook );
 }
 
 /* Systick is a 24 bit counter.

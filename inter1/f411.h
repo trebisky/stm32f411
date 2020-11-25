@@ -15,3 +15,6 @@
 
 /* pointer to void function */
 typedef void (*vfptr) ( void );
+typedef void (*ifptr) ( int );
+
+/* THE END */

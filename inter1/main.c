@@ -79,13 +79,70 @@ echo_test ( void )
 	}
 }
 
+/* ================================================= */
+/* Working 11-24-2020 */
+
+/* Called at interrupt level */
+void
+serial_fn ( int c )
+{
+	printf ( "Rcv: 0x%x ", c );
+	if ( c >= ' ' )
+	    printf ( "%c", c );
+	printf ( "\n" );
+}
+
+/* This could be improved with some ARM trick */
+static void
+idle_loop ( void )
+{
+	/*
+	for ( ;; )
+	    ;
+	*/
+	for ( ;; ) {
+	    blink_delay ( EVEN_SLOWER );
+	    // serial_debug ( UART1 );
+	}
+}
+
+static void
+inter_test ( int fd )
+{
+	serial_read_hookup ( fd, serial_fn );
+	idle_loop ();
+}
+
+/* ================================================= */
+/* Working 11-24-2020 */
+
+static int ss;
+
+static void
+toggle_led ( void )
+{
+	if ( ss ) {
+	    led_on ();
+	    ss = 0;
+	} else {
+	    led_off ();
+	    ss = 1;
+	}
+}
+
 /* This gets called at 1000 Hz at
  * interrupt level.
  */
-void
+static int nvic_count;
+
+static void
 systick_fn ( void )
 {
-	// putc ( '+' );
+	nvic_count++;
+	if ( nvic_count >= 1000 ) {
+	    toggle_led ();
+	    nvic_count = 0;
+	}
 }
 
 static void
@@ -93,9 +150,9 @@ systick_test ( void )
 {
 	unsigned int count;
 
-	systick_init ();
-
+	nvic_count = 0;
 	systick_hookup ( systick_fn );
+	led_on ();
 
 	for ( ;; ) {
 	    blink_delay ( EVEN_SLOWER );
@@ -104,37 +161,54 @@ systick_test ( void )
 	}
 }
 
+/* to disable then enable interrupts ..
+asm volatile( "cpsid i" ::: "memory" );
+  -- critical section --
+asm volatile( "cpsie i" ::: "memory" );
+ */
+
 void
 startup ( void )
 {
 	int fd;
 
 	rcc_init ();
-	// systick_init ();
+	systick_init ();
 
 	fd = serial_begin ( UART1, 115200 );
 	// fd = serial_begin ( UART2, 115200 );
 
 	set_std_serial ( fd );
 
+	nvic_init ();
+
+	led_init ();
+	led_off ();
+
 	puts ( "\n" );
 	puts ( "Up and running\n" );
 	// printf ( "CPU running at %d Hz\n", get_cpu_hz() );
 	printf ( "Console on UART%d\n", fd+1 );
-
-	led_init ();
-	led_off ();
 
 	// test_blink ();
 	// test2 ();
 	// test3 ();
 	// test4 ();
 
+	// The chip seems to come up with interrupts enabled,
+	// so this is not necessary.
+	// asm volatile( "cpsie i" ::: "memory" );
+
+	/* And executing this indeed blocks interrupts,
+	 *  and Systick as well !!
+	 */
+	// asm volatile( "cpsid i" ::: "memory" );
 
 	// test_blink ();
 	// test4 ();
 	// echo_test ();
-	systick_test ();
+	// systick_test ();
+	inter_test ( fd );
 
 	led_on ();
 	for ( ;; ) ;

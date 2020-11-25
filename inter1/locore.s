@@ -27,7 +27,29 @@
 .word   bogus        	/* 14 PendSV */
 .word   systick_handler /* 15 SysTick */
 
-.word	bogus		/* IRQ 21 -- Wwdg*/
+@ and now 68 IRQ vectors
+.word   bogus           /* IRQ  0 */
+.word   bogus           /* IRQ  1 */
+.word   bogus           /* IRQ  2 */
+.word   bogus           /* IRQ  3 -- RTC */
+.word   bogus           /* IRQ  4 */
+.word   bogus           /* IRQ  5 */
+.word   bogus           /* IRQ  6 */
+.word   bogus           /* IRQ  7 */
+.word   bogus           /* IRQ  8 */
+.word   bogus           /* IRQ  9 */
+.word   bogus           /* IRQ 10 */
+.word   bogus           /* IRQ 11 */
+.word   bogus           /* IRQ 12 */
+.word   bogus           /* IRQ 13 */
+.word   bogus           /* IRQ 14 */
+.word   bogus           /* IRQ 15 */
+.word   bogus           /* IRQ 16 */
+.word   bogus           /* IRQ 17 */
+.word   bogus           /* IRQ 18 */
+.word   bogus           /* IRQ 19 */
+.word   bogus           /* IRQ 20 */
+.word	bogus		/* IRQ 21 */
 .word	bogus		/* IRQ 22 */
 .word	bogus		/* IRQ 23 */
 .word	bogus		/* IRQ 24 -- Timer 1 break */
@@ -35,11 +57,8 @@
 .word	bogus		/* IRQ 26 -- Timer 1 trig */
 .word	bogus		/* IRQ 27 -- Timer 1 cc */
 
-@.word	tim2_handler	/* IRQ 28 -- Timer 2 */
 .word	bogus		/* IRQ 28 -- Timer 2 */
-@.word	tim3_handler	/* IRQ 29 -- Timer 3 */
 .word	bogus		/* IRQ 29 -- Timer 3 */
-@.word	tim4_handler	/* IRQ 30 -- Timer 4 */
 .word	bogus		/* IRQ 30 -- Timer 4 */
 
 .word	bogus		/* IRQ 31 */

@@ -15,14 +15,32 @@
  */
 
 struct nvic {
-	volatile unsigned long iser[3];	/* 00 */
-	volatile unsigned long icer[3];	/* 0c */
-	/* ... */
+	volatile unsigned int iser[8];	/* 00 set enable */
+	int __pad1[24];
+	volatile unsigned int icer[8];	/* 80 clear enable */
+	int __pad2[24];
+	volatile unsigned int ispr[8];	/* 100 set pending */
+	int __pad3[24];
+	volatile unsigned int icpr[8];	/* 180 clear pending */
+	int __pad4[24];
+	volatile unsigned int iabr[8];	/* 200 active bit */
+	int __pad5[56];
+	volatile unsigned char ip[240];	/* 300 priority */
+	int __pad6[644];
+	volatile unsigned int stir;	/* EF00 - software trigger */
 };
 
 #define NVIC_BASE	((struct nvic *) 0xe000e100)
 
 #define NUM_IRQ	68
+
+void
+nvic_init ( void )
+{
+	struct nvic *np = NVIC_BASE;
+
+	show_reg ( "nvic stir", &np->stir );
+}
 
 void
 nvic_enable ( int irq )
