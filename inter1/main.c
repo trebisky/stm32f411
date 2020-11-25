@@ -79,12 +79,29 @@ echo_test ( void )
 	}
 }
 
-/* Can be called from within rcc_init */
+/* This gets called at 1000 Hz at
+ * interrupt level.
+ */
 void
-blinker ( void )
+systick_fn ( void )
 {
-	led_init ();
-	test_blink ();
+	// putc ( '+' );
+}
+
+static void
+systick_test ( void )
+{
+	unsigned int count;
+
+	systick_init ();
+
+	systick_hookup ( systick_fn );
+
+	for ( ;; ) {
+	    blink_delay ( EVEN_SLOWER );
+	    count = get_systick_count ();
+	    printf ( "Systick count: %d\n", count );
+	}
 }
 
 void
@@ -93,14 +110,16 @@ startup ( void )
 	int fd;
 
 	rcc_init ();
-	systick_init ();
+	// systick_init ();
 
 	fd = serial_begin ( UART1, 115200 );
 	// fd = serial_begin ( UART2, 115200 );
 
 	set_std_serial ( fd );
 
-	printf ( "CPU running at %d Hz\n", get_cpu_hz() );
+	puts ( "\n" );
+	puts ( "Up and running\n" );
+	// printf ( "CPU running at %d Hz\n", get_cpu_hz() );
 	printf ( "Console on UART%d\n", fd+1 );
 
 	led_init ();
@@ -111,12 +130,11 @@ startup ( void )
 	// test3 ();
 	// test4 ();
 
-	puts ( "\n" );
-	puts ( "Up and running\n" );
 
 	// test_blink ();
 	// test4 ();
-	echo_test ();
+	// echo_test ();
+	systick_test ();
 
 	led_on ();
 	for ( ;; ) ;

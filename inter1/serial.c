@@ -51,9 +51,21 @@ struct uart {
 #define UART2_BASE      (struct uart *) 0x40004400
 #define UART3_BASE      (struct uart *) 0x40011400
 
+#define SERIAL1_IRQ	37
+#define SERIAL2_IRQ	38
+#define SERIAL3_IRQ	71
+
 static struct uart *uart_bases[] = {
     UART1_BASE, UART2_BASE, UART3_BASE
 };
+
+#define NUM_UARTS 2
+
+struct uart_stuff {
+	vfptr uart_hook;
+};
+
+static struct uart_stuff uart_info[NUM_UARTS];
 
 /* Bits in Cr1 */
 #define	CR1_ENABLE	0x2000
@@ -90,6 +102,16 @@ static struct uart *uart_bases[] = {
 #define	ST_CTS		0x0200
 
 /* ========================================================================= */
+
+void
+uart1_handler ( void )
+{
+}
+
+void
+uart2_handler ( void )
+{
+}
 
 /* The baud rate.  This is subdivided from the bus clock.
  * It is as simple as dividing the bus clock by the baud
@@ -151,6 +173,12 @@ serial_getc ( int uart )
 	c = serial_read ( uart );
 	if ( c == '\r' )
 	    c = '\n';
+}
+
+void
+serial_read_hookup ( int uart, vfptr fn )
+{
+	uart_info[uart].uart_hook = fn;
 }
 
 void
@@ -561,8 +589,6 @@ serial3_handler ( void )
 	serial_putc ( c );
 }
 
-#define SERIAL1_IRQ	37
-#define SERIAL2_IRQ	38
 #define SERIAL3_IRQ	39
 
 /* ------------------------------------------------------- */

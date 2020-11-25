@@ -13,3 +13,5 @@
 #define GPIOB	1
 #define GPIOC	2
 
+/* pointer to void function */
+typedef void (*vfptr) ( void );
