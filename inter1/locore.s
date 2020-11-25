@@ -12,19 +12,19 @@
 @ First the "standard" 16 entries for a cortex-m4
 .word   0x20020000  	/* stack top address */
 .word   _reset      	/* 1 Reset */
-.word   bogus        	/* 2 NMI */
-.word   bogus        	/* 3 Hard Fault */
-.word   bogus        	/* 4 MM Fault */
-.word   bogus        	/* 5 Bus Fault */
-.word   bogus        	/* 6 Usage Fault */
-.word   bogus        	/* 7 RESERVED */
-.word   bogus        	/* 8 RESERVED */
-.word   bogus        	/* 9 RESERVED*/
-.word   bogus        	/* 10 RESERVED */
-.word   bogus        	/* 11 SV call */
-.word   bogus        	/* 12 Debug reserved */
-.word   bogus        	/* 13 RESERVED */
-.word   bogus        	/* 14 PendSV */
+.word   fault        	/* 2 NMI */
+.word   fault        	/* 3 Hard Fault */
+.word   fault        	/* 4 MM Fault */
+.word   fault        	/* 5 Bus Fault */
+.word   fault        	/* 6 Usage Fault */
+.word   fault        	/* 7 RESERVED */
+.word   fault        	/* 8 RESERVED */
+.word   fault        	/* 9 RESERVED*/
+.word   fault        	/* 10 RESERVED */
+.word   fault        	/* 11 SV call */
+.word   fault        	/* 12 Debug reserved */
+.word   fault        	/* 13 RESERVED */
+.word   fault        	/* 14 PendSV */
 .word   systick_handler /* 15 SysTick */
 
 @ and now 68 IRQ vectors
@@ -101,9 +101,6 @@
 
 
 .section .text
-
-.thumb_func
-bogus:   b .
 
 .thumb_func
 _reset:

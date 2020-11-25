@@ -53,4 +53,25 @@ nvic_enable ( int irq )
 	np->iser[irq/32] = 1 << (irq%32);
 }
 
+/* These are default entrys in the interrupt vector
+ * If we don't spin, we end up in a furious interrupt loop
+ * since we don't cancel the interrupt
+ * No telling if we will get the messages or not,
+ *  but we usually do.
+ */
+void
+bogus ( void )
+{
+	printf ( "Unexpected interrupt!\n" );
+	printf ( "Spinning\n" );
+	for ( ;; ) ;
+}
+
+void
+fault ( void )
+{
+	printf ( "Unexpected fault!\n" );
+	printf ( "Spinning\n" );
+	for ( ;; ) ;
+}
 /* THE END */
