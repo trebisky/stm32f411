@@ -24,6 +24,7 @@ because each "example" builds on the one before it.
 
 On the other hand, if you actually want to use this code for
 something, the last in the list is the best developed.
+I am slowly building to something, I'm not sure what.
 
 * ST-Link - initial experiments with openocd and my ST-Link adapter
 * blink1 - the most basic LED blinking demo I can manage
