@@ -34,7 +34,7 @@
 .word   bogus           /* IRQ  3 -- RTC */
 .word   bogus           /* IRQ  4 */
 .word   bogus           /* IRQ  5 */
-.word   bogus           /* IRQ  6 */
+.word   exti0_handler   /* IRQ  6 */
 .word   bogus           /* IRQ  7 */
 .word   bogus           /* IRQ  8 */
 .word   bogus           /* IRQ  9 */

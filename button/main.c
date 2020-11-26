@@ -97,7 +97,7 @@ systick_test ( void )
  * when pushed.
  */
 void
-button_test ( void )
+button_scan ( void )
 {
 	int x;
 
@@ -110,6 +110,20 @@ button_test ( void )
 	    if ( x == 0 )
 		printf ( "Button !!\n" );
 	}
+}
+
+static void
+button_fn ( void )
+{
+	printf ( "Button event !\n" );
+}
+
+void
+button_int_test ( void )
+{
+	exti_setup ( GPIOA, 0, button_fn );
+
+	idle ();
 }
 
 /* ================================================= */
@@ -132,7 +146,8 @@ startup ( void )
 	// systick_test ();
 
 	printf ( "Waiting for button push\n" );
-	button_test ();
+	// button_scan ();
+	button_int_test ();
 
 	printf ( "Done, spinning\n" );
 	for ( ;; ) ;
