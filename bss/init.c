@@ -10,6 +10,10 @@
 #include "f411.h"
 
 /* These are arranged in the LDS script */
+/* We don't need all these, but they were
+ * interesting when sorting all this out and
+ * do no harm (no extra memory is used.
+ */
 extern char __bss_start;
 extern char __bss_end;
 extern char __end;
@@ -51,7 +55,6 @@ stm_init ( void )
 
 	led_init ();
 	led_off ();
-	// blinker ();
 
 	/* Call the user code */
 	startup ();
@@ -88,6 +91,7 @@ static const int demo_2 = 123;
  *  BSS end: 20000048
  *  Data start: 20000048
  *  Data end: 20000068
+ *  End: 20000068
  *  Text start: 08000000
  *  Text end: 080012BC
  *  RO Data start: 080012DC
@@ -104,6 +108,9 @@ init_show ( void )
 
 	printf ( "Data start: %X\n", &__data_start );
 	printf ( "Data end: %X\n", &__data_end );
+
+	/* Heap could start here */
+	printf ( "End: %X\n", &__end );
 
 	printf ( "Text start: %X\n", &__text_start );
 	printf ( "Text end: %X\n", &__text_end );

@@ -207,7 +207,6 @@ cpu_clock_init_pll ( void )
 	while ( ! (rp->cr & CR_PLLRDY) )
 	    ;
 
-	// blinker ();
 	/* switch from HSI to PLL */
 	xyz = rp->conf;
 	xyz &= ~CONF_CLOCK_BITS;
@@ -372,6 +371,7 @@ rcc_init ( void )
 	cpu_clock_init ();
 }
 
+#ifdef notdef
 /* Hook so we can use serial IO for debug
  * later after serial is initialized.
  */
@@ -381,6 +381,7 @@ rcc_debug ( void )
 	// cpu_clock_init_xxx ();
 
 }
+#endif
 
 /* On the Black Pill boards that I have, we have an external
  * 25 Mhz crystal.

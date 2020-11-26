@@ -56,6 +56,7 @@ SECTIONS
        *(.data*)
        . = ALIGN(4);
        __data_end = .;
+       __end = .;
    } > sram AT> flash
 
    .rodata :

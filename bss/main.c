@@ -186,6 +186,18 @@ bss_test ( void )
 	    printf ( "Stuff %d: %X\n", i, stuff[i] );
 }
 
+static int myval = 5;
+
+static void
+data_test ( void )
+{
+	if ( myval != 5 )
+	    printf ( "Data test fails, not initialized\n" );
+	myval++;
+	if ( myval != 6 )
+	    printf ( "Data test fails, not mutable\n" );
+}
+
 void
 startup ( void )
 {
@@ -214,11 +226,11 @@ startup ( void )
 	// inter_test ( fd );
 
 	bss_test ();
+	data_test ();
+
 	init_show ();
 
-	fisher ();
-
-	led_on ();
+	// led_on ();
 
 	printf ( "Done, spinning\n" );
 	for ( ;; ) ;
