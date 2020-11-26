@@ -29,6 +29,14 @@ struct gpio {
 	volatile unsigned int afh;	/* 0x24 */
 };
 
+/* We have 3 gpio (more in the chip, but not routed on our 48 pin package).
+ * We really only have A and B available.
+ * PC 13 is the onboard LED
+ * PC 14 and 15 are routed to the board edge, but are connected to
+ * the 32 kHz crystal, so I can't see how that would be useful.
+ * But PA and PB give us plenty of pins.
+ */
+
 #define GPIOA_BASE	(struct gpio *) 0x40020000
 #define GPIOB_BASE	(struct gpio *) 0x40020400
 #define GPIOC_BASE	(struct gpio *) 0x40020800

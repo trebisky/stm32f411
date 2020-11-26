@@ -1,13 +1,26 @@
 11-24-2020
 
-This builds on my serial2 demo.
+This is all about initializing BSS to zero
+and getting initialized RAM variables set
+up right.
 
-The game here is to get some things working
- with interrupts, in particular:
+We end up with 3 sorts of C variables.
 
-Systick running at 1000 Hz
-Serial read interrupts.
+1 - bss variables in ram, set to zero ...
 
-My idea is for both of the above to allow "hooks",
-which would lead to an event driven "callback" way
-of programming.
+int var1;
+
+2 - data variables in ram, initialized from
+ values in flash ...
+
+int var2 = 99;
+
+3 - rodata variables that are in flash ...
+
+const int var3 = 123;
+
+Note also that string constants (such as arguments
+to printf) and const by default and end up being
+handled as "rodata", such as:
+
+puts ( "Hello world\n" );
