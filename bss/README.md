@@ -20,7 +20,7 @@ int var2 = 99;
 const int var3 = 123;
 
 Note also that string constants (such as arguments
-to printf) and const by default and end up being
+to printf) are "const" by default and end up being
 handled as "rodata", such as:
 
 puts ( "Hello world\n" );
