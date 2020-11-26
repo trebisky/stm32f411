@@ -26,6 +26,9 @@ On the other hand, if you actually want to use this code for
 something, the last in the list is the best developed.
 I am slowly building to something, I'm not sure what.
 
+By the time you get to "button" this has all evolved into
+what is a good start on a useful "framework".
+
 * ST-Link - initial experiments with openocd and my ST-Link adapter
 * blink1 - the most basic LED blinking demo I can manage
 * serial1 - basic serial IO (uart) without interrupts
@@ -33,3 +36,4 @@ I am slowly building to something, I'm not sure what.
 * serial2 - test all 3 uarts, add nice printf scheme
 * inter1 - first interrupts (systick and serial read)
 * bss - add code to clear bss and initialize variables
+* button - get interrupts from the "user" button
