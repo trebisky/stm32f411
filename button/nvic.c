@@ -151,19 +151,34 @@ exti0_handler ( void )
             (*exti_hook) ();
 }
 
+#define EXTI0	0
+#define EXTI1	1
+#define EXTI2	2
+#define EXTI3	3
+
 /* Hackish first cut, suitable for A0 */
+/* Nothing special needs to be done for the GPIO
+ * other than setting it up as an input.
+ * Next set the sysconfig muxes to route the
+ *  gpio signal to one of 4 exti lines that
+ *  are available to it.
+ * Last, set up the exti business for that line.
+ */
 void
 exti_setup ( int gpio, int pin, vfptr fn )
 {
 	struct exti *ep = EXTI_BASE;
+	int line = EXTI0;
 
-	ep->ftrigger = 1<<pin;
-	ep->rtrigger = ~(1<<pin);
-	ep->mask = 1<<pin;
-	ep->imask = 1<<pin;
-	exti_mask = 1<<pin;
+	gpio_input_init ( gpio, pin );
 
-	exti_sysconfig ( gpio, pin, 0 );
+	exti_sysconfig ( gpio, pin, line );
+
+	ep->ftrigger = 1<<line;
+	ep->rtrigger = ~(1<<line);
+	ep->mask = 1<<line;
+	ep->imask = 1<<line;
+	exti_mask = 1<<line;
 
 	exti_hook = fn;
 	nvic_enable ( IRQ_EXTI0 );
