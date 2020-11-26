@@ -196,12 +196,16 @@ exti_setup ( int gpio, int pin, vfptr fn )
  * but if you let the processor come out of wfe and then
  * immediately unmask interrupts, maybe that is the thing to
  * do and will let the processor enter a deeper sleep mode.
+ * It certainly does work.
  */
 void
 idle ( void )
 {
-	for ( ;; )
+	for ( ;; ) {
+	    disable_irq;
 	    asm volatile( "wfe" );
+	    enable_irq;
+	}
 }
 
 /* These are default entrys in the interrupt vector
