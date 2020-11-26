@@ -189,15 +189,19 @@ exti_setup ( int gpio, int pin, vfptr fn )
 
 /* The idea here is that this is an "idle loop", i.e. a place
  * for the processor to sit and wait for interrupts.
- * I am just spinning for now, but someday a clever ARM
- * instruction should be uses (such as WFE) that will save
- * power but wait for exceptions.  Or something.
+ * This was originally just a hard spin loop.
+ * Now I use "wfe" - there is also "wfi" and people talk
+ * about masking interrupts before launching one of these,
+ * which sounds like exactly the wrong thing to do,
+ * but if you let the processor come out of wfe and then
+ * immediately unmask interrupts, maybe that is the thing to
+ * do and will let the processor enter a deeper sleep mode.
  */
 void
 idle ( void )
 {
 	for ( ;; )
-	    ;
+	    asm volatile( "wfe" );
 }
 
 /* These are default entrys in the interrupt vector
