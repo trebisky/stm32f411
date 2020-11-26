@@ -32,3 +32,4 @@ I am slowly building to something, I'm not sure what.
 * clocks - get the clock running at 25 or 96 Mhz, not 16
 * serial2 - test all 3 uarts, add nice printf scheme
 * inter1 - first interrupts (systick and serial read)
+* bss - add code to clear bss and initialize variables
