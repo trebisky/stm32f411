@@ -37,3 +37,4 @@ what is a good start on a useful "framework".
 * inter1 - first interrupts (systick and serial read)
 * bss - add code to clear bss and initialize variables
 * button - get interrupts from the "user" button
+* delay - delay via systick, also sleep, after, repeat
