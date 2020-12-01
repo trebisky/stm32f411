@@ -9,37 +9,6 @@
 
 #include "f411.h"
 
-/* Someday we will write a proper delay routine and dump this */
-
-#define FAST	250
-#define FASTER	50
-#define SLOW	500
-#define SLOWER	800
-#define EVEN_SLOWER	1600
-#define REALLY_SLOW	2000
-
-void
-blink_delay ( int rate )
-{
-	volatile unsigned int count = 10000 * rate;
-
-	while ( count-- )
-	    ;
-}
-
-static void
-test_blink ( void )
-{
-	for ( ;; ) {
-	    led_on ();
-	    blink_delay ( EVEN_SLOWER );
-	    led_off ();
-	    blink_delay ( EVEN_SLOWER );
-	}
-}
-
-void blinker ( void ) { test_blink(); }
-
 static int ss;
 
 static void
@@ -82,7 +51,7 @@ systick_test ( void )
 	led_on ();
 
 	for ( ;; ) {
-	    blink_delay ( EVEN_SLOWER );
+	    delay ( 1000 );
 	    count = get_systick_count ();
 	    printf ( "Systick count: %d\n", count );
 	}
@@ -104,7 +73,7 @@ button_scan ( void )
 	gpio_input_init ( GPIOA, 0 );
 
 	for ( ;; ) {
-	    blink_delay ( FAST );
+	    delay ( 200 );
 	    x = gpio_read ( GPIOA, 0 );
 	    // printf ( "Button: %X\n", x );
 	    if ( x == 0 )
@@ -112,18 +81,40 @@ button_scan ( void )
 	}
 }
 
+/* Button test 1 - all handled at interrupt level */
+
 static void
-button_fn ( void )
+button_fn1 ( void )
 {
-	printf ( "Button event !\n" );
+	printf ( "Button event (1)!\n" );
 }
 
 void
-button_int_test ( void )
+button_int_test1 ( void )
 {
-	exti_setup ( GPIOA, 0, button_fn );
+	exti_setup ( GPIOA, 0, button_fn1 );
+}
 
-	idle ();
+/* Button test 2 - use block/unblock to synchronize
+ * with non-interrupt code.
+ */
+
+static void
+button_fn2 ( void )
+{
+	unblock ();
+}
+
+
+void
+button_int_test2 ( void )
+{
+	exti_setup ( GPIOA, 0, button_fn2 );
+
+	for ( ;; ) {
+	    block ();
+	    printf ( "Button event!\n" );
+	}
 }
 
 void
@@ -135,6 +126,32 @@ delay_test ( void )
 	    toggle_led ();
 	    delay ( 500 );
 	}
+}
+
+static int rep_id;
+
+static void
+event_fn1 ( void )
+{
+    repeat_cancel ( rep_id );
+}
+
+static void
+event_fn2 ( void )
+{
+    (void) repeat ( 125, toggle_led);
+}
+
+extern void show_events ( void );
+
+/* Works fine 12-1-2020 */
+void
+repeat_test ( void )
+{
+	rep_id = repeat ( 400, toggle_led );
+	event ( 3000, event_fn1 );
+	event ( 6000, event_fn2 );
+	event ( 8000, show_events );
 }
 
 /* ================================================= */
@@ -156,15 +173,21 @@ startup ( void )
 
 	// systick_test ();
 
+	ram_init ();
+
+	// tested OK
+	// delay_test ();
+
 	// printf ( "Waiting for button push\n" );
 	// button_scan ();
-	// button_int_test ();
+	// button_int_test1 ();
+	// button_int_test2 ();
 
-	ram_init ();
-	delay_test ();
+	printf ( "Set up repeat\n" );
+	repeat_test ();
 
-	printf ( "Done, spinning\n" );
-	for ( ;; ) ;
+	printf ( "Enter idle loop\n" );
+	idle ();
 }
 
 /* THE END */

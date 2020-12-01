@@ -146,7 +146,7 @@ exti0_handler ( void )
 
 	ep->pending |= exti_mask;
 
-	printf ( "EXTI !\n" );
+	// printf ( "EXTI !\n" );
         if ( exti_hook )
             (*exti_hook) ();
 }

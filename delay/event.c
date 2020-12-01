@@ -1,21 +1,12 @@
 /* event.c
  * Tom Trebisky 12-1-2020
  *
- * Code to handle "after" and "repeat"
+ * Code to handle "event" and "repeat"
  *
  * Taken from Kyu.
  */
 
 #include "f411.h"
-
-struct event {
-	struct event *next;
-	int delay;
-	int rep_count;
-	int rep_reload;
-	int id;
-	vfptr func;
-};
 
 /* ========================================================= */
 
@@ -26,48 +17,86 @@ struct event {
  */
 
 extern char __end;
+extern char __bss_end;
+extern char __data_end;
 
-static unsigned int ram_end;
+static unsigned int ram_next;
 
 void *
 ram_alloc ( int size )
 {
-	ram_end -= size;
-	ram_end &= 0xfffffffc;
-	return (void *) ram_end;
+	void *rv;
+
+	rv = (void *) ram_next;
+	ram_next += size;
+	ram_next &= 0xfffffffc;
+
+	return rv;
 }
 
 void
 ram_init ( void )
 {
-	struct event *ep;
+	// struct event *ep;
+
+	// printf ( "__end = %X\n", &__end );
+	// printf ( "__bss_end = %X\n", &__bss_end );
+	// printf ( "__data_end = %X\n", &__data_end );
+
+#ifdef notdef
 	/* I see:
 	    END: 20000060
 	    SP: 2001FFD8
 	*/
 	printf ( "END: %X\n", &__end );
 	printf ( "SP: %X\n", get_sp() );
+#endif
 
-	ram_end = (unsigned int) &__end;
-	ram_end &= 0xfffffffc;
-	printf ( "ram end: %X\n", ram_end );
+	ram_next = (unsigned int) &__end;
+	ram_next &= 0xfffffffc;
+
+#ifdef notdef
+	printf ( "ram next: %X\n", ram_next );
 	printf ( "alloc: %d bytes\n", sizeof(struct event) );
 	ep = (struct event *) ram_alloc ( sizeof(struct event) );
 	printf ( "ep: %X\n", ep );
 	printf ( "ram end: %X\n", ram_end );
+#endif
 }
 
 
 /* ========================================================= */
 
+struct event {
+	struct event *next;
+	int delay;
+	int rep_count;
+	int rep_reload;
+	int id;
+	vfptr func;
+};
+
+/* Statistics */
+static int num_repeats = 0;
+static int num_events = 0;
+static int num_free = 0;
+
+void
+show_events ( void )
+{
+	printf ( "Num active repeats = %d\n", num_repeats );
+	printf ( "Num active events = %d\n", num_events );
+	printf ( "Num free events = %d\n", num_free );
+}
+
 static volatile int delay_counts = 0;
 
-/* Holds lists of waits and repeats waiting
+/* Holds lists of events and repeats waiting
  * on timer events.
  */
 static struct event *event_freelist = 0;
 
-static struct event *wait_head = 0;
+static struct event *event_head = 0;
 static struct event *repeat_head = 0;
 static unsigned int event_id = 1;
 
@@ -79,8 +108,11 @@ event_alloc ( void )
 	if ( event_freelist ) {
 	    ep = event_freelist;
 	    event_freelist = ep->next;
+	    --num_free;
+	    // printf ( "Ealloc 1: %X\n", ep );
 	} else {
 	    ep = (struct event *) ram_alloc ( sizeof(struct event) );
+	    // printf ( "Ealloc 2: %X\n", ep );
 	}
 	ep->id = event_id++;
 }
@@ -90,6 +122,7 @@ event_free ( struct event *ep )
 {
     ep->next = event_freelist;
     event_freelist = ep;
+    ++num_free;
 }
 
 /* Expects to be called with
@@ -97,16 +130,16 @@ event_free ( struct event *ep )
  * (or by interrupt code).
  */
 static void
-remove_wait ( struct event *ep )
+remove_event ( struct event *ep )
 {
         struct event *lp;
 
-        if ( wait_head == ep ) {
-            wait_head = ep->next;
-            if ( wait_head )
-                wait_head->delay += ep->delay;
+        if ( event_head == ep ) {
+            event_head = ep->next;
+            if ( event_head )
+                event_head->delay += ep->delay;
         } else {
-            for ( lp = wait_head; lp; lp = lp->next )
+            for ( lp = event_head; lp; lp = lp->next )
                 if ( lp == ep ) {
                     lp = ep->next;
                     if ( lp )
@@ -115,6 +148,7 @@ remove_wait ( struct event *ep )
         }
 
 	event_free ( ep );
+	--num_events;
 }
 
 /* Called once for every timer interrupt.
@@ -132,18 +166,18 @@ event_tick ( void )
 	    --delay_counts;
 
         /* Process events */
-        if ( wait_head ) {
-            --wait_head->delay;
-            while ( wait_head && wait_head->delay == 0 ) {
-                ep = wait_head;
-                wait_head = wait_head->next;
+        if ( event_head ) {
+            --event_head->delay;
+            while ( event_head && event_head->delay == 0 ) {
+                ep = event_head;
+                event_head = event_head->next;
 		(*ep->func) ();
-		remove_wait ( ep );
+		remove_event ( ep );
             }
         }
 
         /* Process repeats.
-         *  repeats are not like waits where we only have to fool
+         *  repeats are not like events where we only have to fool
          *  with the head of the list, we loop through all of them
          *  and keep them in no particular order.
          */
@@ -164,15 +198,13 @@ event_tick ( void )
  * needs to decrement the leading entry, and
  * when it becomes zero, one or more entries
  * get launched.
- *
- * Only called (now) from timer_add_wait()
  */
 static void
-setup_after ( struct event *ep, int delay )
+setup_event ( struct event *ep, int delay )
 {
         struct event *p, *lp;
 
-        p = wait_head;
+        p = event_head;
 
         while ( p && p->delay <= delay ) {
             delay -= p->delay;
@@ -186,33 +218,38 @@ setup_after ( struct event *ep, int delay )
         ep->delay = delay;
         ep->next = p;
 
-        if ( p == wait_head )
-            wait_head = ep;
+        if ( p == event_head )
+            event_head = ep;
         else
             lp->next = ep;
 }
 
 /* Public */
-void
-after ( int delay, vfptr fn )
+int
+event ( int delay, vfptr fn )
 {
 	struct event *ep;
 
 	ep = event_alloc ();
 	ep->func = fn;
+	++num_events;
 
 	disable_irq;
-	setup_after ( ep, delay );
+	setup_event ( ep, delay );
 	enable_irq;
+
+	return ep->id;
 }
 
 /* Public */
-void
+int
 repeat ( int delay, vfptr fn )
 {
 	struct event *ep;
 
 	ep = event_alloc ();
+	num_repeats++;
+
 	ep->func = fn;
 
         ep->rep_reload = delay;
@@ -223,6 +260,8 @@ repeat ( int delay, vfptr fn )
         ep->next = repeat_head;
         repeat_head = ep;
 	enable_irq;
+
+	return ep->id;
 }
 
 /* Rarely called, if ever.
@@ -263,6 +302,7 @@ repeat_cancel ( int id )
 	enable_irq;
 
 	event_free ( ep );
+	--num_repeats;
 }
 
 /* This gets called from thr_unblock() when we
@@ -270,22 +310,22 @@ repeat_cancel ( int id )
  * could be called from interrupt code.
  * We lock interrupts to avoid a race with the
  * interrupt code, which could also decide to
- * remove the wait.
+ * remove the event.
  */
 void
-after_cancel ( int id )
+event_cancel ( int id )
 {
         struct event *ep;
 
 	disable_irq;
 
-        for ( ep=repeat_head; ep; ep = ep->next ) {
+        for ( ep=event_head; ep; ep = ep->next ) {
 	    if ( ep->id == id )
 		break;
 	}
 
 	if ( ep )
-	    remove_wait ( ep );
+	    remove_event ( ep );
 
 	enable_irq;
 }
