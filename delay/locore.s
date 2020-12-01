@@ -107,4 +107,9 @@ _reset:
     bl stm_init
     b .
 
+        .globl get_sp
+get_sp:
+        add     r0, sp, #0
+        bx      lr
+
 /* THE END */

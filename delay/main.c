@@ -126,6 +126,17 @@ button_int_test ( void )
 	idle ();
 }
 
+void
+delay_test ( void )
+{
+	printf ( "Start delay test\n" );
+
+	for ( ;; ) {
+	    toggle_led ();
+	    delay ( 500 );
+	}
+}
+
 /* ================================================= */
 
 void
@@ -145,9 +156,12 @@ startup ( void )
 
 	// systick_test ();
 
-	printf ( "Waiting for button push\n" );
+	// printf ( "Waiting for button push\n" );
 	// button_scan ();
-	button_int_test ();
+	// button_int_test ();
+
+	ram_init ();
+	delay_test ();
 
 	printf ( "Done, spinning\n" );
 	for ( ;; ) ;

@@ -1,6 +1,5 @@
-# Makefile for button demo
+# Makefile for delay demo
 #
-# basic seria/uart driver for the STM32F411.
 
 TOOLS = arm-none-eabi
 
@@ -23,23 +22,23 @@ OBJCOPY = $(TOOLS)-objcopy
 DUMP = $(TOOLS)-objdump -d
 GDB = $(TOOLS)-gdb
 
-OBJS = locore.o init.o main.o rcc.o gpio.o serial.o nvic.o systick.o
+OBJS = locore.o init.o main.o rcc.o gpio.o serial.o nvic.o systick.o event.o
 
-all: button.elf button.dump button.bin
+all: delay.elf delay.dump delay.bin
 
 # Look at object file sections
 zoot:
 	$(TOOLS)-objdump -h *.o
-	$(TOOLS)-objdump -h button.elf
+	$(TOOLS)-objdump -h delay.elf
 
-button.dump:	button.elf
-	$(DUMP) button.elf >button.dump
+delay.dump:	delay.elf
+	$(DUMP) delay.elf >delay.dump
 
-button.elf: 	$(OBJS) f411.lds
-	$(LD) -T f411.lds -o button.elf $(OBJS)
+delay.elf: 	$(OBJS) f411.lds
+	$(LD) -T f411.lds -o delay.elf $(OBJS)
 
-button.bin:        button.elf
-	$(OBJCOPY) button.elf button.bin -O binary
+delay.bin:        delay.elf
+	$(OBJCOPY) delay.elf delay.bin -O binary
 
 locore.o:	locore.s
 	$(AS) locore.s -o locore.o
@@ -49,8 +48,8 @@ locore.o:	locore.s
 
 OCDCFG = -f /usr/share/openocd/scripts/interface/stlink-v2.cfg -f /usr/share/openocd/scripts/target/stm32f4x.cfg
 
-flash:  button.elf
-	openocd $(OCDCFG) -c "program button.elf verify reset exit"
+flash:  delay.elf
+	openocd $(OCDCFG) -c "program delay.elf verify reset exit"
 
 ocd:
 	openocd $(OCDCFG)
@@ -59,10 +58,10 @@ ocd:
 # It was last supplied as a Fedora package in Fedora 29, no telling why.
 
 gdb:
-	$(GDB) --eval-command="target remote localhost:3333" button.elf
+	$(GDB) --eval-command="target remote localhost:3333" delay.elf
 
 gdbtui:
-	$(GDB) -tui --eval-command="target remote localhost:3333" button.elf
+	$(GDB) -tui --eval-command="target remote localhost:3333" delay.elf
 
 clean:
-	rm -f *.o button.elf button.dump button.bin
+	rm -f *.o delay.elf delay.dump delay.bin

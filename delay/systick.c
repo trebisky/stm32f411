@@ -75,22 +75,6 @@ struct systick {
  */
 #define CPUID_BASE	(unsigned int *) 0xE000ED00
 
-#ifdef notdef
-int ss = 0;
-
-static void
-toggle_led ( void )
-{
-	if ( ss ) {
-	    led_on ();
-	    ss = 0;
-	} else {
-	    led_off ();
-	    ss = 1;
-	}
-}
-#endif
-
 static unsigned int systick_count;
 
 unsigned int
@@ -107,6 +91,9 @@ void
 systick_handler ( void )
 {
 	systick_count++;
+
+	event_tick ();
+
 	// toggle_led ();
 	if ( systick_hook )
 	    (*systick_hook) ();
@@ -143,11 +130,13 @@ systick_init ( void )
 	// show32 ( "Systick Cal: ", stp->cal );
 }
 
+#ifdef notdef
 static void
 show_cpuid ( void )
 {
 	/* returns: 0x410FC241 */
 	// show32 ( "CPU id: ", *CPUID_BASE );
 }
+#endif
 
 /* THE END */
