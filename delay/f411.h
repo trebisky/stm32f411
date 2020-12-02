@@ -20,10 +20,32 @@ typedef void (*ifptr) ( int );
 /* Handy macros */
 
 /* These can be used as locks around critical sections */
-#define enable_irq	asm volatile( "cpsie i" ::: "memory" )
-#define disable_irq	asm volatile( "cpsie i" ::: "memory" )
+// #define enable_irq	asm volatile( "cpsie i" ::: "memory" )
+// #define disable_irq	asm volatile( "cpsid i" ::: "memory" )
 
-/* This macro in particular, I am trying to discipline myself
+/* I like these better because they look like C functions,
+ * and I keep putting () after the above.
+ * Also the above were just not working right,
+ * This seems * impossible, as simple as they are,
+ *   but that is what I observed.
+ *   (the disable seemed to be having no effect).
+ *   Disassembled code looked fine, who knows.
+ *
+ * The following work just fine;
+ * You need to tell the compiler to optimize for these
+ *  to actually go inline.
+ */
+static inline void irq_enable( void )
+{
+  __asm__ __volatile__ ("cpsie i"); /* Clear PRIMASK */
+}
+
+static inline void irq_disable( void )
+{
+  __asm__ __volatile__ ("cpsid i"); /* Set PRIMASK */
+}
+
+/* This macro in particular, I am intending to discipline myself
  * to use more often.  It allows you to look at a datasheet and
  * just copy a bit number rather than working out a hex constant
  * as I have long done.  My traditional method is both slow and

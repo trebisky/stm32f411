@@ -112,4 +112,16 @@ get_sp:
         add     r0, sp, #0
         bx      lr
 
+        .globl get_pri
+get_pri:
+        movw	r0, #999
+        mrs	r0, primask
+        bx      lr
+
+        .globl get_con
+get_con:
+        movw	r0,#999
+        movs	r0,#99
+        bx      lr
+
 /* THE END */

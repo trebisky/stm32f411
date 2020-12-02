@@ -153,13 +153,15 @@ remove_event ( struct event *ep )
 
 /* Called once for every timer interrupt.
  * (i.e. from systick at 1000 Hz)
- * Runs at interrupt level.
- * Handles delays and repeats.
+ * *** Runs at interrupt level.
+ * Handles events and repeats.
  */
 void
 event_tick ( void )
 {
         struct event *ep;
+
+	// printf ( "%d\n", delay_counts );
 
 	/* Handle "delay" */
 	if ( delay_counts )
@@ -191,7 +193,7 @@ event_tick ( void )
 }
 
 /* maintain a linked list of folks waiting on
- * timer delay activations.
+ * timer event (delay) activations.
  * In time-honored fashion, the list is kept in
  * sorted order, with the soon to be scheduled
  * entries at the front.  Each tick then just
@@ -234,9 +236,9 @@ event ( int delay, vfptr fn )
 	ep->func = fn;
 	++num_events;
 
-	disable_irq;
+	irq_disable ();
 	setup_event ( ep, delay );
-	enable_irq;
+	irq_enable ();
 
 	return ep->id;
 }
@@ -256,10 +258,10 @@ repeat ( int delay, vfptr fn )
         ep->rep_count = delay;
 
         /* add to front of list */
-	disable_irq;
+	irq_disable ();
         ep->next = repeat_head;
         repeat_head = ep;
-	enable_irq;
+	irq_enable ();
 
 	return ep->id;
 }
@@ -267,6 +269,8 @@ repeat ( int delay, vfptr fn )
 /* Rarely called, if ever.
  * There is less of an issue with a race since
  * interrupt code never removes or cancels the repeat.
+ * XXX - note if this gets called from interrupt level
+ * we wrongly disable/enable IRQ.
  */
 void
 repeat_cancel ( int id )
@@ -283,7 +287,7 @@ repeat_cancel ( int id )
 	if ( ! ep )
 	    return;
 
-	disable_irq;
+	irq_disable ();
 
         if ( repeat_head == ep ) {
             repeat_head = ep->next;
@@ -299,7 +303,7 @@ repeat_cancel ( int id )
 	    }
 	}
 
-	enable_irq;
+	irq_enable ();
 
 	event_free ( ep );
 	--num_repeats;
@@ -317,7 +321,7 @@ event_cancel ( int id )
 {
         struct event *ep;
 
-	disable_irq;
+	irq_disable ();
 
         for ( ep=event_head; ep; ep = ep->next ) {
 	    if ( ep->id == id )
@@ -327,7 +331,7 @@ event_cancel ( int id )
 	if ( ep )
 	    remove_event ( ep );
 
-	enable_irq;
+	irq_enable ();
 }
 
 /* ======================================================================= */
@@ -352,9 +356,12 @@ void
 idle ( void )
 {
 	for ( ;; ) {
-	    disable_irq;
+	    /*
+	    irq_disable ();
 	    asm volatile( "wfe" );
-	    enable_irq;
+	    irq_enable ();
+	    */
+	    asm volatile( "wfi" );
 	}
 }
 
@@ -366,9 +373,65 @@ idle ( void )
 void
 sleep ( void )
 {
-	disable_irq;
+	/*
+	irq_disable ();
 	asm volatile( "wfe" );
-	enable_irq;
+	irq_enable ();
+	*/
+	asm volatile( "wfi" );
+}
+
+/* Using idle() is far better, yet this has its uses in
+ * a few rare cases.
+ */
+void
+spin ( void )
+{
+	for ( ;; ) ;
+}
+
+static void
+loop_delay ( int d )
+{
+	volatile int x;
+
+	for ( x=0; x<d; x++ )
+	    ;
+}
+
+/* For some reason I have yet to sort out, my sysclk test
+ * only works right -- when I have the interrupt sandwich
+ * around wfe above -- when I add this delay.
+ *  tjt  12-2-2020
+ */
+static void
+dilly_dally ( void )
+{
+	// printf ( "Delay wake %d\n", delay_counts );
+	// printf ( "Kilroy was here\n" );
+
+	// Works
+	// printf ( "XXXX\n" );
+
+	// Works for a few seconds 
+	// printf ( "XXX\n" );
+
+	// Won't work
+	// printf ( "XX\n" );
+
+	// Works
+	// loop_delay ( 50000 );
+	// loop_delay ( 20000 );
+#ifdef notdef
+	/* we get one tick during the delay */
+	printf ( "-%d\n", delay_counts );
+	loop_delay ( 10000 );
+	printf ( "-%d\n", delay_counts );
+#endif
+	loop_delay ( 10000 );
+
+	// Nope
+	// loop_delay ( 5000 );
 }
 
 /* User code can call this to sleep until a certain number
@@ -377,12 +440,14 @@ sleep ( void )
 void
 delay ( int counts )
 {
-	disable_irq;
+	irq_disable ();
 	delay_counts = counts;
-	enable_irq;
+	irq_enable ();
 
+	// printf ( "Delay enters sleep loop\n" );
 	for ( ;; ) {
 	    sleep ();
+	    // dilly_dally ();
 	    if ( ! delay_counts )
 		break;
 	}
@@ -399,9 +464,9 @@ static volatile char block_flag = 0;
 void
 block ( void )
 {
-	disable_irq;
+	irq_disable ();
 	block_flag = 1;
-	enable_irq;
+	irq_enable ();
 
 	for ( ;; ) {
 	    sleep ();

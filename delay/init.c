@@ -47,6 +47,7 @@ stm_init ( void )
             *p = *src++;
 
 
+	ram_init ();
 	rcc_init ();
 	systick_init ();
 	nvic_init ();
@@ -57,7 +58,7 @@ stm_init ( void )
 	/* Not needed, the chip starts up with
 	 * interrupts enabled
 	 */
-	enable_irq;
+	// enable_irq;
 
 	/* Call the user code */
 	startup ();

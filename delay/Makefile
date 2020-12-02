@@ -15,6 +15,7 @@ AS = $(TOOLS)-as
 # In truth the implicit fn warnings are good, but for the purpose of
 #  these demos, I can't be busy to set up prototypes as I should.
 CC = $(TOOLS)-gcc -mcpu=cortex-m4 -mthumb -Wno-implicit-function-declaration -fno-builtin
+CC = $(TOOLS)-gcc -mcpu=cortex-m4 -mthumb -Wno-implicit-function-declaration -fno-builtin -O
 
 #LD = $(TOOLS)-gcc
 LD = $(TOOLS)-ld.bfd
@@ -23,6 +24,8 @@ DUMP = $(TOOLS)-objdump -d
 GDB = $(TOOLS)-gdb
 
 OBJS = locore.o init.o main.o rcc.o gpio.o serial.o nvic.o systick.o event.o
+
+# *.o:	f411.h
 
 all: delay.elf delay.dump delay.bin
 
