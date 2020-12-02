@@ -1,26 +1,37 @@
-11-24-2020
+12-2-2020
 
-This is all about initializing BSS to zero
-and getting initialized RAM variables set
-up right.
+This "project" is unusual because I really didn't add anything in the way
+of hardware drivers.  I added some synchronization primitives, as follows;
+all in event.c
 
-We end up with 3 sorts of C variables.
+First some basic concepts.  I am working towards and event driven, callback
+oriented scheme.  A basic thought is that all spin loops are evil and must
+be eradicated.  A second thought is that all event callbacks are done at
+interrupt level.  This means they should be very short and simple.
+The non-interrupt code is typically just a call to idle() where it sits
+in an idle loop and callbacks do everything.
 
-1 - bss variables in ram, set to zero ...
+But if non-trivial code needs to run, it ought not to run in a callback
+as part of an interrupt handler, so we need ways to synchronize between
+interrupt events and "mainline code" (ARM documents would say code running
+in "thread" rather than "handler" mode).  I will call mainline or "thread"
+code "user" code, in spite of that being somewhat misleading.
 
-int var1;
+idle/sleep - These are ways for user code to wait for interrupt events
 
-2 - data variables in ram, initialized from
- values in flash ...
+block/unblock -- user code can call block, and then wait for handler code
+to call unblock to set it running again.
 
-int var2 = 99;
+delay - this allows user code to sleep for a certain number of milliseconds
+without the usual spin counting rubbish.
 
-3 - rodata variables that are in flash ...
+event - this lets user code specify a function to be called (at interrupt level)
+once at some number of milliseconds in the future.
 
-const int var3 = 123;
+repeat - this lets user code specify a function to be called (at interrupt level)
+over and over at some interval in milliseconds.
 
-Note also that string constants (such as arguments
-to printf) are "const" by default and end up being
-handled as "rodata", such as:
+Note that using repeat along with block/unblock allows things to be arranged
+so that user code runs over and over at some interval.
 
-puts ( "Hello world\n" );
+Both repeats and events can be cancelled.
